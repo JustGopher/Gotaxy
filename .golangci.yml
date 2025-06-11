@@ -1,0 +1,42 @@
+version: "2"
+run:
+  timeout: 5m  # 运行超时时间
+
+linters:
+  default: none
+  enable:
+    - asciicheck      # 检查 ASCII 编码的错误
+    - contextcheck    # 检查 context 的使用是否正确
+    - errcheck        # 检查所有函数返回值是否被正确处理，避免漏检 error
+    - errname         # 检查 error 变量的命名是否正确
+    - forcetypeassert # 检查强制类型转换是否正确
+    - funlen          # 检查函数长度是否过长
+    - govet           # Go 官方提供的 vet 工具，检查语义错误
+    - ineffassign     # 检查变量赋值是否被正确处理（减少冗余）
+    - lll             # 检查行长度是否过长
+    - nestif          # 检查嵌套的 if 语句是否过多
+    - nakedret        # 如果函数过长，禁用裸返回
+    - predeclared     # 禁止使用Go关键字命名
+    - revive          # 检查代码中的错误、警告、建议等（减少冗余）
+    - staticcheck     # 非常强大的 linter，能查出死代码、不安全代码、拼写错误等
+    - tagalign        # 检查结构体标签的对齐是否正确
+    - unparam         # 检查未使用的参数
+    - unused          # 检查未使用的变量、函数、常量、类型等（减少冗余）
+    - varnamelen      # 检查变量名长度是否过长
+    - wastedassign    # 检查变量赋值是否被正确处理
+    - wrapcheck       # 检查 error 包装是否正确
+  settings:
+    funlen:
+      lines: 100
+    lll:
+      line-length: 150
+    nestif:
+      min-complexity: 10
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
