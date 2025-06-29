@@ -30,3 +30,5 @@ go.work.sum
 # Editor/IDE
 # .vscode/
 .idea
+
+!/docs/*.md

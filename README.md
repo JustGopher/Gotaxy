@@ -6,33 +6,20 @@
 
 > _"Go beyond NAT, with style."_
 
-## ✨ 预期特性
+## ✨ TODO
 
 - 🧩 支持端口转发，将内网服务暴露到公网
 - 🔒 加密传输，保护数据安全
 - 🧰 简洁 CLI 工具，易于部署
-- 📦 支持多平台，Windows、Linux、Mac OS 等
+- 📦 支持多平台，Windows、Linux、MacOS 等
 - 🔗 支持自定义域名和自定义端口
 - 📊 支持流量统计，方便了解使用情况
-- 🌐 服务端通过 Web 面板控制，管理方便 
+- 🌐 服务端通过 Web 面板控制，管理方便
 - 🔄 后续将支持多客户端、 TCP/UDP代理等功能
 
 ---
 
-## 📁 项目结构
-```
-Gotaxy/ 
-├── CHANGELOG.md # 版本日志 
-├── docs/ 
-│   ├── COMMIT_CONVENTION.md # 提交规范
-│   ├── CONTRIBUTING.md      # 贡献指南
-│   └── DevLog.md            # 开发日志
-└── README.md
-```
-
----
-
-## 🚀 快速开始(待开发)
+## 🚀 快速开始
 
 ### 服务端启动
 
@@ -51,8 +38,6 @@ go run cmd/client/main.go
 
 欢迎提交 Issue 和 Pull Request。
 
-如果要贡献代码，请查阅[CONTRIBUTING.md.md](docs/CONTRIBUTING.md)文件
+如果要贡献代码，请查阅 [CONTRIBUTING.md.md](docs/CONTRIBUTING.md) 文件
 
-我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范，请参考 [COMMIT_CONVENTION.md](docs/COMMIT_CONVENTION.md)
-
----
+提交代码请阅读 [COMMIT_CONVENTION.md](docs/COMMIT_CONVENTION.md)，我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范
