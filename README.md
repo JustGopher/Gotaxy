@@ -34,6 +34,12 @@ go run cmd/client/main.go
 ```
 ---
 
+## 需求文档
+
+详细需求分析请参阅 [REQUIREMENTS.md](docs/REQUIREMENTS.md) 文件。
+
+---
+
 ## 提交贡献
 
 欢迎提交 Issue 和 Pull Request。
