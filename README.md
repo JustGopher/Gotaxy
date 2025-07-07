@@ -24,13 +24,13 @@
 ### 服务端启动
 
 ```bash
-go run cmd/server/main.go
+go run cmd/server/server.go
 ```
 
 ### 客户端连接
 
 ```bash
-go run cmd/client/main.go
+go run cmd/client/client.go
 ```
 ---
 

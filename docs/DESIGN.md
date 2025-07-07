@@ -9,12 +9,13 @@ gotaxy/
 ├── docs/ 
 │   ├── images/              // 文档图片
 │   ├── CHANGELOG.md 	     // 版本日志
-│   ├── CICD.md     	     // 版本日志
+│   ├── CICD.md     	     // CICD方案
 │   ├── COMMIT_CONVENTION.md // 提交规范
 │   ├── CONTRIBUTING.md      // 贡献指南
-│   ├── DESIGN.md            // 版本日志
-│   ├── DEVLOG.md            // 版本日志
-│   └── DEVLOG.md            // 开发日志
+│   ├── DESIGN.md            // 架构设计
+│   ├── DEVLOG.md            // 开发日志
+│   ├── REQUIREMENTS.md      // 需求文档
+│   └── TODO.md              // 任务列表
 ├── cmd/                     // 主程序入口（client/server）
 │   ├── server/              // 服务端启动入口
 │   │   └── server.go

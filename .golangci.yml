@@ -32,6 +32,11 @@ linters:
       line-length: 150
     nestif:
       min-complexity: 10
+    revive:
+      rules:
+        # 禁用包注释检查
+        - name: package-comments
+          disabled: true
 
 formatters:
   enable:
