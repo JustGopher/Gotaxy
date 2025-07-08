@@ -58,6 +58,8 @@ func StartServer() {
 		go handleClient(clientConn, externalListener)
 	}
 }
+
+// 处理客户端连接
 func handleClient(clientConn net.Conn, externalListener net.Listener) {
 	defer func(clientConn net.Conn) {
 		err := clientConn.Close()

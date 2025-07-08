@@ -3,11 +3,12 @@ package shellcli
 import (
 	"errors"
 	"fmt"
-	"github.com/chzyer/readline"
 	"io"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/chzyer/readline"
 )
 
 type Shell struct {

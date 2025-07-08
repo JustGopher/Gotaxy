@@ -2,11 +2,11 @@ package shellCore
 
 import (
 	"fmt"
-	"github/JustGopher/Gotaxy/pkg/shellcli"
-	"github/JustGopher/Gotaxy/pkg/tlsgen"
-
 	"log"
 	"strconv"
+
+	"github/JustGopher/Gotaxy/pkg/shellcli"
+	"github/JustGopher/Gotaxy/pkg/tlsgen"
 )
 
 // shell 全局变量

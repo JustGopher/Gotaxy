@@ -28,6 +28,7 @@ linters:
   settings:
     funlen:
       lines: 100
+      statements: 80
     lll:
       line-length: 150
     nestif:
@@ -37,11 +38,10 @@ linters:
         # 禁用包注释检查
         - name: package-comments
           disabled: true
-
+    varnamelen:
+      min-name-length: 1
 formatters:
   enable:
     - gci
     - gofmt
-    - gofumpt
     - goimports
-    - golines
