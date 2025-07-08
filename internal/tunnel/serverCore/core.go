@@ -1,127 +1,131 @@
 package serverCore
 
 import (
-	"bufio"
-	"fmt"
+	"context"
+	"github.com/xtaci/smux"
 	"io"
 	"log"
 	"net"
-	"os"
-	"strings"
+	"sync/atomic"
 )
 
-const (
-	token        = "your_fixed_token" // 替换为你的固定 token
-	externalPort = "9080"             // 服务端暴露的外部端口
-)
+var listenPort = "9000"
 
-// StartServer 启动监听
-func StartServer() {
-	// 服务端监听客户端连接的端口
-	clientListener, err := net.Listen("tcp", ":9000")
-	if err != nil {
-		fmt.Println("服务端监听客户端连接失败:", err)
-		os.Exit(1)
-	}
-	defer func(clientListener net.Listener) {
-		err := clientListener.Close()
-		if err != nil {
-			log.Println("关闭客户端连接失败:", err)
-			return
-		}
-	}(clientListener)
-	fmt.Println("服务端监听客户端连接端口 9000...")
+var portMap = map[string]string{
+	"9080": "127.0.0.1:8080",
+	"9081": "127.0.0.1:8081",
+}
 
-	// 服务端暴露给外部的端口
-	externalListener, err := net.Listen("tcp", ":"+externalPort)
-	if err != nil {
-		fmt.Println("服务端监听外部端口失败:", err)
-		os.Exit(1)
+// 当前活跃 session （用 atomic.Value 可原子替换）
+var currentSession atomic.Value
+
+func StartServer(ctx context.Context) {
+	go waitControlConn(ctx)
+
+	for pubPort := range portMap {
+		go startPublicListener(ctx, pubPort)
 	}
-	defer func(externalListener net.Listener) {
-		err := externalListener.Close()
-		if err != nil {
-			log.Println("关闭外部连接失败:", err)
-			return
-		}
-	}(externalListener)
-	fmt.Println("服务端暴露外部端口", externalPort, "...")
+	<-ctx.Done()
+	log.Println("服务端收到退出信号，停止中...")
+}
+
+// 不断接受控制连接
+func waitControlConn(ctx context.Context) {
+	listener, err := net.Listen("tcp", ":"+listenPort)
+	if err != nil {
+		log.Fatalf("监听失败: %v", err)
+	}
+	log.Printf("控制端口监听 :%s 中...\n", listenPort)
+
+	go func() {
+		<-ctx.Done()
+		log.Println("关闭控制连接监听")
+		listener.Close()
+	}()
 
 	for {
-		clientConn, err := clientListener.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("接受客户端连接失败:", err)
+			select {
+			case <-ctx.Done():
+				return // 正常退出
+			default:
+				log.Println("控制连接接入失败:", err)
+				continue
+			}
+		}
+
+		session, err := smux.Server(conn, nil)
+		if err != nil {
+			log.Println("创建 smux 会话失败:", err)
+			conn.Close()
 			continue
 		}
-		fmt.Println("接受客户端连接:", clientConn.RemoteAddr())
 
-		go handleClient(clientConn, externalListener)
+		log.Println("smux 会话建立成功")
+		currentSession.Store(session)
 	}
 }
 
-// 处理客户端连接
-func handleClient(clientConn net.Conn, externalListener net.Listener) {
-	defer func(clientConn net.Conn) {
-		err := clientConn.Close()
-		if err != nil {
-			log.Println("关闭客户端连接失败:", err)
-			return
-		}
-	}(clientConn)
-
-	// 读取客户端发送的 token
-	reader := bufio.NewReader(clientConn)
-	tokenStr, err := reader.ReadString('\n')
+// 持续监听公网端口流量，建立 stream
+func startPublicListener(ctx context.Context, pubPort string) {
+	listener, err := net.Listen("tcp", ":"+pubPort)
 	if err != nil {
-		fmt.Println("读取客户端 token 失败:", err)
-		return
+		log.Fatalf("监听公网端口 %s 失败: %v", pubPort, err)
 	}
+	target := portMap[pubPort]
+	log.Printf("公网监听 :%s 映射到客户端内网 %s\n", pubPort, target)
 
-	// 去掉换行符
-	tokenStr = strings.TrimSpace(tokenStr)
+	go func() {
+		<-ctx.Done()
+		log.Printf("关闭公网端口监听 :%s", pubPort)
+		listener.Close()
+	}()
 
-	// 验证 token
-	if tokenStr != token {
-		fmt.Println("客户端 token 验证失败:", tokenStr)
-		return
-	}
-
-	fmt.Println("客户端 token 验证成功:", tokenStr)
-
-	// 接受外部连接
 	for {
-		externalConn, err := externalListener.Accept()
+		publicConn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("接受外部连接失败:", err)
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				log.Printf("公网连接失败: %v", err)
+				continue
+			}
+		}
+		// 正常 smux 流转发
+		sessionVal := currentSession.Load()
+		if sessionVal == nil {
+			log.Println("无有效客户端连接，关闭连接")
+			publicConn.Close()
 			continue
 		}
-		fmt.Println("接受外部连接:", externalConn.RemoteAddr())
+		session := sessionVal.(*smux.Session)
 
-		go forwardData(externalConn, clientConn)
-		go forwardData(clientConn, externalConn)
+		stream, err := session.OpenStream()
+		if err != nil {
+			log.Printf("smux stream 创建失败: %v", err)
+			publicConn.Close()
+			continue
+		}
+
+		// 通知客户端目标地址
+		_, err = stream.Write([]byte(target + "\n"))
+		if err != nil {
+			log.Println("写入目标地址失败:", err)
+			publicConn.Close()
+			stream.Close()
+			continue
+		}
+
+		log.Printf("建立转发: 公网 :%s <=> 客户端本地 %s", pubPort, target)
+		go proxy(publicConn, stream)
+		go proxy(stream, publicConn)
 	}
 }
 
-// 转发数据
-func forwardData(src net.Conn, dst net.Conn) {
-	defer func(src net.Conn) {
-		err := src.Close()
-		if err != nil {
-			log.Println("关闭连接失败:", err)
-			return
-		}
-	}(src)
-	defer func(dst net.Conn) {
-		err := dst.Close()
-		if err != nil {
-			log.Println("关闭连接失败:", err)
-			return
-		}
-	}(dst)
-
-	i, err := io.Copy(dst, src)
-	if err != nil {
-		return
-	}
-	fmt.Println("数据转发完成:", src.RemoteAddr(), "->", dst.RemoteAddr(), " 传输字节数: ", i, " bytes")
+func proxy(dst, src net.Conn) {
+	defer dst.Close()
+	defer src.Close()
+	io.Copy(dst, src)
 }

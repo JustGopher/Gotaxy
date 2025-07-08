@@ -1,8 +1,9 @@
-package shellcli
+package shell
 
 import (
 	"errors"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
 	"io"
 	"log"
 	"strconv"
@@ -73,6 +74,8 @@ func (s *Shell) Run() {
 			continue
 		}
 
+		isExit := false
+
 		// 固定命令
 		switch {
 		case strings.HasPrefix(line, "mode "):
@@ -96,9 +99,12 @@ func (s *Shell) Run() {
 			s.usage(rl.Stderr())
 			continue
 		case line == "exit":
-			goto exit
+			global.Cancel()
+			isExit = true
 		}
-
+		if isExit {
+			break
+		}
 		// 自定义命令分发
 		parts := strings.Fields(line)
 		cmd, args := parts[0], parts[1:]
@@ -109,7 +115,6 @@ func (s *Shell) Run() {
 			log.Println("Unknown command:", strconv.Quote(line))
 		}
 	}
-exit:
 }
 
 func (s *Shell) buildCompleter() *readline.PrefixCompleter {

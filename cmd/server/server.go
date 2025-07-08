@@ -1,12 +1,18 @@
 package main
 
 import (
-	shellCore "github/JustGopher/Gotaxy/internal/tunnel/serverCore/shell"
-	"github/JustGopher/Gotaxy/pkg/shellcli"
+	"context"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/shell"
 )
 
 func main() {
-	shell := shellcli.New()
-	shellCore.Register(shell)
-	shell.Run()
+	global.Ctx, global.Cancel = context.WithCancel(context.Background())
+
+	go serverCore.StartServer(global.Ctx)
+
+	sh := shell.New()
+	shell.RegisterCMD(sh)
+	sh.Run()
 }

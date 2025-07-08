@@ -1,19 +1,18 @@
-package shellCore
+package shell
 
 import (
 	"fmt"
 	"log"
 	"strconv"
 
-	"github/JustGopher/Gotaxy/pkg/shellcli"
 	"github/JustGopher/Gotaxy/pkg/tlsgen"
 )
 
 // shell 全局变量
-var shell *shellcli.Shell
+var shell *Shell
 
-// Register 注册命令
-func Register(sh *shellcli.Shell) {
+// RegisterCMD 注册命令
+func RegisterCMD(sh *Shell) {
 	shell = sh
 	sh.Register("gen-ca", generateCA)
 	sh.Register("gen-certs", generateCerts)
@@ -73,7 +72,7 @@ func generateCA(args []string) {
 			fmt.Printf("确定要重新生成 CA 证书吗？(y/n) \n")
 			readline, err := shell.Rl.Readline()
 			if err != nil {
-				log.Println("shell.Rl.Readline() 读取输入失败:", err)
+				log.Println("shellcmd.Rl.Readline() 读取输入失败:", err)
 				return
 			}
 			if readline == "n" {
