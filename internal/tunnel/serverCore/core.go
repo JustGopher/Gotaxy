@@ -2,11 +2,12 @@ package serverCore
 
 import (
 	"context"
-	"github.com/xtaci/smux"
 	"io"
 	"log"
 	"net"
 	"sync/atomic"
+
+	"github.com/xtaci/smux"
 )
 
 var listenPort = "9000"
@@ -40,7 +41,7 @@ func waitControlConn(ctx context.Context) {
 	go func() {
 		<-ctx.Done()
 		log.Println("关闭控制连接监听")
-		listener.Close()
+		_ = listener.Close()
 	}()
 
 	for {
@@ -58,7 +59,7 @@ func waitControlConn(ctx context.Context) {
 		session, err := smux.Server(conn, nil)
 		if err != nil {
 			log.Println("创建 smux 会话失败:", err)
-			conn.Close()
+			_ = conn.Close()
 			continue
 		}
 
@@ -79,7 +80,7 @@ func startPublicListener(ctx context.Context, pubPort string) {
 	go func() {
 		<-ctx.Done()
 		log.Printf("关闭公网端口监听 :%s", pubPort)
-		listener.Close()
+		_ = listener.Close()
 	}()
 
 	for {
@@ -97,15 +98,15 @@ func startPublicListener(ctx context.Context, pubPort string) {
 		sessionVal := currentSession.Load()
 		if sessionVal == nil {
 			log.Println("无有效客户端连接，关闭连接")
-			publicConn.Close()
+			_ = publicConn.Close()
 			continue
 		}
-		session := sessionVal.(*smux.Session)
+		session, _ := sessionVal.(*smux.Session)
 
 		stream, err := session.OpenStream()
 		if err != nil {
 			log.Printf("smux stream 创建失败: %v", err)
-			publicConn.Close()
+			_ = publicConn.Close()
 			continue
 		}
 
@@ -113,8 +114,8 @@ func startPublicListener(ctx context.Context, pubPort string) {
 		_, err = stream.Write([]byte(target + "\n"))
 		if err != nil {
 			log.Println("写入目标地址失败:", err)
-			publicConn.Close()
-			stream.Close()
+			_ = publicConn.Close()
+			_ = stream.Close()
 			continue
 		}
 
@@ -125,7 +126,15 @@ func startPublicListener(ctx context.Context, pubPort string) {
 }
 
 func proxy(dst, src net.Conn) {
-	defer dst.Close()
-	defer src.Close()
-	io.Copy(dst, src)
+	defer func(dst net.Conn) {
+		err := dst.Close()
+		log.Printf("proxy() 关闭连接失败: %v", err)
+	}(dst)
+	defer func(src net.Conn) {
+		err := src.Close()
+		if err != nil {
+			log.Printf("proxy() 关闭连接失败: %v", err)
+		}
+	}(src)
+	_, _ = io.Copy(dst, src)
 }

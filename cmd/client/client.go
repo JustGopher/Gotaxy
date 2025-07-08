@@ -3,11 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/xtaci/smux"
 	"io"
 	"log"
 	"net"
 	"net/http"
+
+	"github.com/xtaci/smux"
 )
 
 const serverAddr = "localhost:9000"
@@ -56,7 +57,7 @@ func handleStream(stream *smux.Stream) {
 	target, err := reader.ReadString('\n')
 	if err != nil {
 		log.Println("读取目标地址失败:", err)
-		stream.Close()
+		_ = stream.Close()
 		return
 	}
 	target = target[:len(target)-1] // 去除换行
@@ -64,7 +65,7 @@ func handleStream(stream *smux.Stream) {
 	localConn, err := net.Dial("tcp", target)
 	if err != nil {
 		log.Printf("连接本地服务 %s 失败: %v", target, err)
-		stream.Close()
+		_ = stream.Close()
 		return
 	}
 
@@ -74,7 +75,17 @@ func handleStream(stream *smux.Stream) {
 }
 
 func proxy(dst, src net.Conn) {
-	defer dst.Close()
-	defer src.Close()
-	io.Copy(dst, src)
+	defer func(dst net.Conn) {
+		err := dst.Close()
+		if err != nil {
+			log.Printf("proxy() 关闭连接失败: %v", err)
+		}
+	}(dst)
+	defer func(src net.Conn) {
+		err := src.Close()
+		if err != nil {
+			log.Printf("proxy() 关闭连接失败: %v", err)
+		}
+	}(src)
+	_, _ = io.Copy(dst, src)
 }
