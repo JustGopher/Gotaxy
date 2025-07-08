@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -30,7 +31,27 @@ func writePem(filename string, block *pem.Block) error {
 }
 
 // GenerateCA 生成 CA 根证书及私钥，写入 dir/ca.crt 和 dir/ca.key
-func GenerateCA(dir string, validDays int) error {
+func GenerateCA(dir string, validDays int, overwrite bool) error {
+	caKeyPath := filepath.Join(dir, "ca.key")
+	caCrtPath := filepath.Join(dir, "ca.crt")
+
+	var crtIsExists bool
+	var keyIsExists bool
+
+	// 检测文件是否存在
+	if _, err := os.Stat(caKeyPath); err == nil {
+		crtIsExists = true
+	}
+	if _, err := os.Stat(caCrtPath); err == nil {
+		keyIsExists = true
+	}
+
+	// 如果文件存在且 overwrite 为 false，则不生成新的证书
+	if crtIsExists && keyIsExists && !overwrite {
+		log.Println("CA 证书已存在，如要重新生成，请使用 -overwrite 选项")
+		return nil
+	}
+
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return err
