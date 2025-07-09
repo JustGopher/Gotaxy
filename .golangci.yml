@@ -42,6 +42,6 @@ linters:
       min-name-length: 1
 formatters:
   enable:
-    # - gci
     - gofmt
     - goimports
+    # - gci
