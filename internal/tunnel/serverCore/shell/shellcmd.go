@@ -1,7 +1,10 @@
 package shell
 
 import (
+	"context"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
 	"log"
 	"strconv"
 
@@ -16,6 +19,26 @@ func RegisterCMD(sh *Shell) {
 	shell = sh
 	sh.Register("gen-ca", generateCA)
 	sh.Register("gen-certs", generateCerts)
+	sh.Register("start", start)
+	sh.Register("stop", stop)
+}
+
+// start 启动服务端
+// 格式：start
+func start(args []string) {
+	// 检查证书是否存在
+	if !tlsgen.CheckServerCertExist("certs") {
+		fmt.Println("证书缺失，请先执行生成证书")
+		return
+	}
+	global.Ctx, global.Cancel = context.WithCancel(context.Background())
+	go serverCore.StartServer(global.Ctx)
+}
+
+// stop 停止服务端
+// 格式：stop
+func stop(args []string) {
+	global.Cancel()
 }
 
 // generateCA 生成 CA 证书

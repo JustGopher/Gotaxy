@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
 
@@ -101,6 +102,7 @@ func (s *Shell) Run() {
 			continue
 		case line == "exit":
 			global.Cancel()
+			time.Sleep(time.Second)
 			isExit = true
 		}
 		if isExit {
