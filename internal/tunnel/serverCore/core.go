@@ -2,9 +2,13 @@ package serverCore
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 	"sync/atomic"
 
 	"github.com/xtaci/smux"
@@ -32,7 +36,12 @@ func StartServer(ctx context.Context) {
 
 // 不断接受控制连接
 func waitControlConn(ctx context.Context) {
-	listener, err := net.Listen("tcp", ":"+listenPort)
+	tlsCfg, err := LoadServerTLSConfig("certs/server.crt", "certs/server.key", "certs/ca.crt")
+	if err != nil {
+		log.Fatalf("加载 TLS 配置失败: %v", err)
+	}
+
+	listener, err := tls.Listen("tcp", ":"+listenPort, tlsCfg)
 	if err != nil {
 		log.Fatalf("监听失败: %v", err)
 	}
@@ -137,4 +146,30 @@ func proxy(dst, src net.Conn) {
 		}
 	}(src)
 	_, _ = io.Copy(dst, src)
+}
+
+// LoadServerTLSConfig 加载服务端 TLS 配置（含双向认证）
+func LoadServerTLSConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
+	// 加载服务端证书
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("加载服务端证书失败: %w", err)
+	}
+
+	// 加载 CA 证书用于校验客户端证书
+	caCertPEM, err := os.ReadFile(caFile)
+	if err != nil {
+		return nil, fmt.Errorf("读取 CA 文件失败: %w", err)
+	}
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCertPEM) {
+		return nil, fmt.Errorf("解析 CA 证书失败")
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert, // 开启 mTLS
+		ClientCAs:    caCertPool,
+		MinVersion:   tls.VersionTLS12,
+	}, nil
 }

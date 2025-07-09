@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// helper 写文件
+// writePem 写文件
 func writePem(filename string, block *pem.Block) error {
 	f, err := os.Create(filename)
 	if err != nil {
@@ -146,6 +146,7 @@ func GenerateServerAndClientCerts(dir string, validDays int, caCertPath, caKeyPa
 	return nil
 }
 
+// GenerateServer 基于已有 CA 生成服务端证书
 func GenerateServer(dir string, validDays int, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
 	serverKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -184,6 +185,7 @@ func GenerateServer(dir string, validDays int, caCert *x509.Certificate, caKey *
 	return nil
 }
 
+// GenerateClient 基于已有 CA 生成客户端证书
 func GenerateClient(dir string, validDays int, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
 	clientKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -219,4 +221,17 @@ func GenerateClient(dir string, validDays int, caCert *x509.Certificate, caKey *
 		return fmt.Errorf("写入客户端证书失败: %v", err)
 	}
 	return nil
+}
+
+// CheckServerCertExist 服务端检查证书是否存在，包括 ca.crt,ca.key,server.crt,server.key
+func CheckServerCertExist(dir string) bool {
+	caCertPath := filepath.Join(dir, "ca.crt")
+	caKeyPath := filepath.Join(dir, "ca.key")
+	serverCertPath := filepath.Join(dir, "server.crt")
+	serverKeyPath := filepath.Join(dir, "server.key")
+	_, caCertErr := os.Stat(caCertPath)
+	_, caKeyErr := os.Stat(caKeyPath)
+	_, serverCertErr := os.Stat(serverCertPath)
+	_, serverKeyErr := os.Stat(serverKeyPath)
+	return caCertErr == nil && caKeyErr == nil && serverCertErr == nil && serverKeyErr == nil
 }
