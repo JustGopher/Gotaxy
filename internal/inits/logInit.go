@@ -1,12 +1,13 @@
 package inits
 
 import (
-	"github/JustGopher/Gotaxy/internal/global"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"path/filepath"
 
+	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/pkg/logger"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // LogInit 日志初始化
