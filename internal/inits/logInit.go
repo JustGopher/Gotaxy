@@ -1,11 +1,12 @@
 package inits
 
 import (
-	"github/JustGopher/Gotaxy/pkg/globals"
-	"github/JustGopher/Gotaxy/pkg/logger"
+	"github/JustGopher/Gotaxy/internal/global"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"path/filepath"
+
+	"github/JustGopher/Gotaxy/pkg/logger"
 )
 
 // LogInit 日志初始化
@@ -35,5 +36,5 @@ func LogInit() {
 	core := zapcore.NewTee(infoCore, errorCore)
 	log := zap.New(core, zap.AddCaller())
 
-	globals.Log = log.Sugar()
+	global.Log = log.Sugar()
 }
