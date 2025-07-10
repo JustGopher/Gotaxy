@@ -97,7 +97,7 @@ func GenerateCA(dir string, validDays int, overwrite bool) error {
 }
 
 // GenerateServerAndClientCerts 基于已有 CA 生成 server 和 client 证书
-func GenerateServerAndClientCerts(dir string, validDays int, caCertPath, caKeyPath string) error {
+func GenerateServerAndClientCerts(ip string, dir string, validDays int, caCertPath, caKeyPath string) error {
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return fmt.Errorf("创建目录 %s 失败: %v", dir, err)
@@ -132,7 +132,7 @@ func GenerateServerAndClientCerts(dir string, validDays int, caCertPath, caKeyPa
 	}
 
 	// =============== 生成服务端证书 =================
-	err = GenerateServer(dir, validDays, caCert, caKey)
+	err = GenerateServer(ip, dir, validDays, caCert, caKey)
 	if err != nil {
 		return fmt.Errorf("生成服务端证书失败: %v", err)
 	}
@@ -147,7 +147,7 @@ func GenerateServerAndClientCerts(dir string, validDays int, caCertPath, caKeyPa
 }
 
 // GenerateServer 基于已有 CA 生成服务端证书
-func GenerateServer(dir string, validDays int, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
+func GenerateServer(ip string, dir string, validDays int, caCert *x509.Certificate, caKey *rsa.PrivateKey) error {
 	serverKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return fmt.Errorf("生成服务端密钥失败: %v", err)
@@ -166,8 +166,11 @@ func GenerateServer(dir string, validDays int, caCert *x509.Certificate, caKey *
 		NotAfter:    time.Now().AddDate(0, 0, validDays),
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		KeyUsage:    x509.KeyUsageDigitalSignature,
-		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
-		DNSNames:    []string{"localhost"},
+		IPAddresses: []net.IP{
+			net.ParseIP("127.0.0.1"),
+			net.ParseIP(ip),
+		},
+		DNSNames: []string{"localhost"},
 	}
 
 	serverDER, err := x509.CreateCertificate(rand.Reader, serverTemplate, caCert, &serverKey.PublicKey, caKey)
