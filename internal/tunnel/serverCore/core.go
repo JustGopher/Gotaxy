@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
 	"io"
 	"log"
 	"net"
@@ -16,15 +17,22 @@ import (
 
 var listenPort = "9000"
 
-var portMap = map[string]string{
-	"9080": "127.0.0.1:8080",
-	"9081": "127.0.0.1:8081",
-}
+var portMap = map[string]string{}
 
 // 当前活跃 session （用 atomic.Value 可原子替换）
 var currentSession atomic.Value
 
+// StartServer 启动服务
 func StartServer(ctx context.Context) {
+	pool := global.ConnPool
+	if pool == nil {
+		log.Fatal("连接池未初始化")
+	}
+	allPortMap := pool.GetAllPort()
+	for port, add := range allPortMap {
+		portMap[port] = add
+	}
+
 	go waitControlConn(ctx)
 
 	for pubPort := range portMap {
@@ -134,6 +142,7 @@ func startPublicListener(ctx context.Context, pubPort string) {
 	}
 }
 
+// proxy 数据转发
 func proxy(dst, src net.Conn) {
 	defer func(dst net.Conn) {
 		err := dst.Close()
