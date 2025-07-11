@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/global"
 )
 
 // Mapping 映射表结构
@@ -49,10 +48,7 @@ func GetAllMpg(db *sql.DB) ([]Mapping, error) {
 		return nil, fmt.Errorf("GetAllMpg() 查询映射数据失败: %v", err)
 	}
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			global.Log.Errorf("GetAllMpg() 关闭映射数据失败 -> %v", err)
-		}
+		_ = rows.Close()
 	}(rows)
 
 	var mappingSli []Mapping
@@ -60,7 +56,6 @@ func GetAllMpg(db *sql.DB) ([]Mapping, error) {
 		var m Mapping
 		err := rows.Scan(&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
 		if err != nil {
-			global.Log.Errorf("GetAllMpg() 扫描映射数据失败 -> %v", err)
 			return nil, err
 		}
 		mappingSli = append(mappingSli, m)

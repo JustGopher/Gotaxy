@@ -3,7 +3,6 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/internal/pool"
 	"github/JustGopher/Gotaxy/internal/storage/models"
 )
@@ -20,25 +19,25 @@ type Config struct {
 func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 	cfgMap, err := models.GetAllCfg(db)
 	if err != nil {
-		global.Log.Errorf("ConfigLoad() 查询配置数据失败 -> %v", err)
+		fmt.Printf("ConfigLoad() 查询配置数据失败 -> %v", err)
 		return
 	}
 	if len(cfgMap) != 3 {
 		err = models.InsertCfg(db, "server_ip", "127.0.0.1")
 		if err != nil {
-			global.Log.Errorf("ConfigLoad() 创建配置数据失败 -> %v", err)
+			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
 		err = models.InsertCfg(db, "listen_port", "9000")
 		if err != nil {
-			global.Log.Errorf("ConfigLoad() 创建配置数据失败 -> %v", err)
+			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
 		err = models.InsertCfg(db, "email", "")
 		if err != nil {
-			global.Log.Errorf("ConfigLoad() 创建配置数据失败 -> %v", err)
+			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
 		cfgMap, err = models.GetAllCfg(db)
 		if err != nil {
-			global.Log.Errorf("ConfigLoad() 创建配置数据失败 -> %v", err)
+			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 			return
 		}
 	}
@@ -48,7 +47,7 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 	fmt.Println("已加载配置...")
 	mpg, err := models.GetAllMpg(db)
 	if err != nil {
-		global.Log.Errorf("ConfigLoad() 查询映射数据失败 -> %v", err)
+		fmt.Printf("ConfigLoad() 查询映射数据失败 -> %v", err)
 		return
 	}
 	for _, v := range mpg {

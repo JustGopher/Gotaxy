@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/global"
 )
 
 // Config 配置表结构
@@ -43,10 +42,7 @@ func GetAllCfg(db *sql.DB) (map[string]string, error) {
 	}
 
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			global.Log.Errorf("GetAllCfg() 关闭配置数据失败 -> %v", err)
-		}
+		_ = rows.Close()
 	}(rows)
 
 	configMap := make(map[string]string)
