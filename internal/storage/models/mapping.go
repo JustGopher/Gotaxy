@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 )
 
 type Mapping struct {
@@ -15,7 +14,8 @@ type Mapping struct {
 	Status     string `json:"status"`
 }
 
-func CreateMapping(db *sql.DB) {
+// CreateMpgStructure 创建映射表结构
+func CreateMpgStructure(db *sql.DB) error {
 	sqlMap := `Create table if not exists mapping (
     id integer primary key autoincrement,
     name varchar(255) not null unique,
@@ -27,34 +27,42 @@ func CreateMapping(db *sql.DB) {
 	_, err := db.Exec(sqlMap)
 	if err != nil {
 		log.Printf("创建映射表失败 -> %v", err)
+		return err
 	}
+	return nil
 }
 
-func InsertMap(db *sql.DB, m Mapping) {
-	_, err := db.Exec("insert into mapping (name, public_port, target_addr, status) values (?,?,?,?)", m.Name, m.PublicPort, m.TargetAddr, m.Status)
+func InsertMpg(db *sql.DB, m Mapping) error {
+	_, err := db.Exec("insert into mapping (name, public_port, target_addr, status) values (?,?,?,?)",
+		m.Name, m.PublicPort, m.TargetAddr, m.Status)
 	if err != nil {
 		log.Printf("插入映射数据失败 -> %v", err)
+		return err
 	}
+	return nil
 }
 
-func GetMapByName(db *sql.DB, name string) (*Mapping, error) {
-	if name == "" {
-		return nil, fmt.Errorf("查询映射数据失败！名字不能为空！")
-	}
-
-	query := "select * from mapping where name =? limit 1"
-	row := db.QueryRow(query, name)
-
-	var mapping Mapping
-
-	err := row.Scan(&mapping.ID, &mapping.Name, &mapping.PublicPort, &mapping.TargetAddr, &mapping.Status)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
+func GetAllMpg(db *sql.DB) ([]Mapping, error) {
+	rows, err := db.Query("select * from mapping")
+	if err != nil {
+		log.Printf("查询映射数据失败 -> %v", err)
 		return nil, err
 	}
 
-	return &mapping, nil
+	defer rows.Close()
+
+	var mappingSli []Mapping
+
+	for rows.Next() {
+		var m Mapping
+		err := rows.Scan(&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
+		if err != nil {
+			log.Printf("扫描配置数据失败 -> %v", err)
+			return nil, err
+		}
+		mappingSli = append(mappingSli, m)
+	}
+	return mappingSli, nil
 }
 
 func DeleteMapByName(db *sql.DB, name string) error {
@@ -66,39 +74,15 @@ func DeleteMapByName(db *sql.DB, name string) error {
 	return err
 }
 
-func UpdateMap(db *sql.DB, name string, updates map[string]string) (*Mapping, error) {
-	var (
-		keys   []string      //用于存储更新的keys
-		values []interface{} // 用于存储values
-		m      Mapping
-	)
+func UpdateMap(db *sql.DB, name string, key string, value string) (*Mapping, error) {
+	var m Mapping
 
-	if name == "" {
-		return nil, fmt.Errorf("更新映射字段失败！名字不能为空！")
-	}
-
-	if len(updates) == 0 {
-		return nil, fmt.Errorf("没有要更新的字段！")
-	}
-
-	for key, value := range updates {
-		keys = append(keys, key+" = ?")
-		values = append(values, value)
-	}
-
-	values = append(values, name)
-	query := "update mapping set" + " " + strings.Join(keys, ",") + " where name =?"
-
-	_, err := db.Exec(query, values...)
+	_, err := db.Exec("update mapping set public_port = ?, target_addr = ? where name = ?", key, value, name)
 	if err != nil {
 		return nil, fmt.Errorf("更新映射失败: %v", err)
 	}
 
-	if updates["name"] == name {
-		updates["name"] = name
-	}
-
-	err = db.QueryRow("select * from mapping where name =?", updates["name"]).Scan(
+	err = db.QueryRow("select * from mapping where name =?", name).Scan(
 		&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
 	if err != nil {
 		return nil, fmt.Errorf("查询映射失败: %v", err)

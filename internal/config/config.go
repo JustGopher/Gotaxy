@@ -3,6 +3,7 @@ package config
 import (
 	"database/sql"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/pool"
 	"github/JustGopher/Gotaxy/internal/storage/models"
 	"log"
 )
@@ -15,7 +16,7 @@ type Config struct {
 }
 
 // ConfigLoad 配置加载
-func (cfg *Config) ConfigLoad(db *sql.DB) {
+func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 	// todo 从数据库加载配置到 config 和连接池
 	cfgMap, err := models.GetAllCfg(db)
 	if err != nil {
@@ -23,16 +24,17 @@ func (cfg *Config) ConfigLoad(db *sql.DB) {
 		return
 	}
 	if len(cfgMap) != 3 {
-		err = models.CreateCfg(db, "server_ip", "127.0.0.1")
+		err = models.InsertCfg(db, "server_ip", "127.0.0.1")
 		if err != nil {
 			log.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
 
-		err = models.CreateCfg(db, "listen_post", "9000")
+		err = models.InsertCfg(db, "listen_port", "9000")
 		if err != nil {
+			log.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
 
-		err = models.CreateCfg(db, "email", "")
+		err = models.InsertCfg(db, "email", "")
 		if err != nil {
 			log.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
@@ -46,4 +48,13 @@ func (cfg *Config) ConfigLoad(db *sql.DB) {
 	cfg.ServerIP = cfgMap["server_ip"]
 	cfg.ListenPort = cfgMap["listen_port"]
 	cfg.Email = cfgMap["email"]
+
+	mpg, err := models.GetAllMpg(db)
+	if err != nil {
+		return
+	}
+
+	for _, v := range mpg {
+		pool.Set(v.Name, v.PublicPort, v.TargetAddr)
+	}
 }
