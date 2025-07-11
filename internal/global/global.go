@@ -2,6 +2,7 @@ package global
 
 import (
 	"context"
+	"database/sql"
 
 	"github/JustGopher/Gotaxy/internal/pool"
 
@@ -17,4 +18,5 @@ var (
 	// ServerIP 服务端公网ip
 	ServerIP string
 	Log      *zap.SugaredLogger
+	DB       *sql.DB
 )

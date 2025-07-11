@@ -3,7 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
+	"github/JustGopher/Gotaxy/internal/global"
 	"log"
 	"strings"
 )
@@ -88,7 +88,7 @@ func UpdateMap(name string, updates map[string]string) (*Mapping, error) {
 	}
 
 	values = append(values, name)
-	query := "update mapping set " + strings.Join(keys, ",") + " where name =?"
+	query := "update mapping set" + " " + strings.Join(keys, ",") + " where name =?"
 
 	_, err := global.DB.Exec(query, values...)
 	if err != nil {
