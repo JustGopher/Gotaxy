@@ -3,8 +3,9 @@ package shell
 import (
 	"context"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/internal/tunnel/serverCore"
-	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
+	"github/JustGopher/Gotaxy/pkg/utils"
 	"log"
 	"strconv"
 
@@ -21,6 +22,8 @@ func RegisterCMD(sh *Shell) {
 	sh.Register("gen-certs", generateCerts)
 	sh.Register("start", start)
 	sh.Register("stop", stop)
+	sh.Register("show-ip", showIP)
+	sh.Register("set-ip", setIP)
 }
 
 // start 启动服务端
@@ -141,9 +144,43 @@ func generateCerts(args []string) {
 	}
 
 	// 生成证书
-	err := tlsgen.GenerateServerAndClientCerts("certs", day, "certs/ca.crt", "certs/ca.key")
+	err := tlsgen.GenerateServerAndClientCerts(global.ServerIP, "certs", day, "certs/ca.crt", "certs/ca.key")
 	if err != nil {
 		log.Println("generateCerts() 生成证书失败:", err)
 		return
 	}
+}
+
+// setIP 设置服务端 IP
+// 格式：set-ip [ip]
+func setIP(args []string) {
+	// 校验数量
+	length := len(args)
+	if length == 0 {
+		fmt.Println("参数不能为空，正确格式为：set-ip [ip]")
+		return
+	}
+	if length != 1 {
+		fmt.Printf("无效的参数 '%s'，正确格式为：set-ip [ip]\n", args)
+		return
+	}
+	// 解析参数
+	ip := args[0]
+	if ip == "" {
+		fmt.Println("IP地址不能为空")
+		return
+	}
+	// 使用正则表达式验证 IP 格式
+	if !utils.IsValidateIP(ip) {
+		fmt.Println("IP地址格式不正确")
+		return
+	}
+	// 设置 IP
+	global.ServerIP = ip
+}
+
+// showIP 显示服务端 IP
+// 格式：show-ip
+func showIP(args []string) {
+	fmt.Println("当前服务端 IP 为：", global.ServerIP)
 }

@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
+	"github/JustGopher/Gotaxy/internal/global"
 	"io"
 	"log"
 	"net"
@@ -14,8 +14,6 @@ import (
 
 	"github.com/xtaci/smux"
 )
-
-var listenPort = "9000"
 
 var portMap = map[string]string{}
 
@@ -49,11 +47,11 @@ func waitControlConn(ctx context.Context) {
 		log.Fatalf("加载 TLS 配置失败: %v", err)
 	}
 
-	listener, err := tls.Listen("tcp", ":"+listenPort, tlsCfg)
+	listener, err := tls.Listen("tcp", ":"+global.ListenPort, tlsCfg)
 	if err != nil {
 		log.Fatalf("监听失败: %v", err)
 	}
-	log.Printf("控制端口监听 :%s 中...\n", listenPort)
+	log.Printf("控制端口监听 :%s 中...\n", global.ListenPort)
 
 	go func() {
 		<-ctx.Done()

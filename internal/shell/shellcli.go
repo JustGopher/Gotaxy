@@ -3,13 +3,12 @@ package shell
 import (
 	"errors"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/global"
 	"io"
 	"log"
 	"strconv"
 	"strings"
 	"time"
-
-	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
 
 	"github.com/chzyer/readline"
 )
