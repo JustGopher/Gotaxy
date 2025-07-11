@@ -38,7 +38,7 @@ func RegisterCMD(sh *Shell) {
 func start(args []string) {
 	// 检查证书是否存在
 	if !tlsgen.CheckServerCertExist("certs") {
-		fmt.Println("证书缺失，请先执行生成证书")
+		fmt.Println("证书缺失，请先生成证书")
 		return
 	}
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
@@ -105,7 +105,8 @@ func generateCA(args []string) {
 			fmt.Printf("确定要重新生成 CA 证书吗？(y/n) \n")
 			readline, err := shell.Rl.Readline()
 			if err != nil {
-				log.Println("shellcmd.Rl.Readline() 读取输入失败:", err)
+				global.Log.Errorf("generateCA() shellcmd.Rl.Readline() 读取输入失败: %v", err)
+				fmt.Println("读取输入失败:", err)
 				return
 			}
 			if readline == "n" {
@@ -122,6 +123,7 @@ func generateCA(args []string) {
 	// 生成 CA 证书
 	err := tlsgen.GenerateCA("certs", year, overwrite)
 	if err != nil {
+		global.Log.Errorf("generateCA() 生成 CA 证书失败: %v", err)
 		log.Println("generateCA() 生成 CA 证书失败:", err)
 		return
 	}
@@ -153,6 +155,7 @@ func generateCerts(args []string) {
 	// 生成证书
 	err := tlsgen.GenerateServerAndClientCerts(global.Config.ServerIP, "certs", day, "certs/ca.crt", "certs/ca.key")
 	if err != nil {
+		global.Log.Errorf("generateCerts() 生成证书失败: %v", err)
 		log.Println("generateCerts() 生成证书失败:", err)
 		return
 	}
@@ -166,6 +169,8 @@ func showConfig(args []string) {
 	fmt.Println(" Email      ：", global.Config.Email)
 }
 
+// showMapping 显示映射
+// 格式：show-mapping
 func showMapping(args []string) {
 	mpg, err := models.GetAllMpg(global.DB)
 	if err != nil {
@@ -180,7 +185,7 @@ func showMapping(args []string) {
 }
 
 // setIP 设置服务端 IP
-// 格式：set-ip [ip]
+// 格式：set-ip <ip>
 func setIP(args []string) {
 	// 校验数量
 	length := len(args)
@@ -207,12 +212,14 @@ func setIP(args []string) {
 	global.Config.ServerIP = ip
 	err := models.UpdateCfg(global.DB, "server_ip", ip)
 	if err != nil {
+		global.Log.Errorf("setIP() 更新配置数据失败: %v", err)
+		fmt.Println("更新配置数据失败:", err)
 		return
 	}
 }
 
 // setPort 设置服务端 Post
-// 格式：set-port [port]
+// 格式：set-port <port>
 func setPort(args []string) {
 	length := len(args)
 	if length != 1 {
@@ -234,7 +241,7 @@ func setPort(args []string) {
 }
 
 // setEmail 设置服务端 Email
-// 格式：set-email [email]
+// 格式：set-email <email>
 func setEmail(args []string) {
 	length := len(args)
 	if length != 1 {
@@ -255,12 +262,14 @@ func setEmail(args []string) {
 	global.Config.Email = args[0]
 	err := models.UpdateCfg(global.DB, "email", args[0])
 	if err != nil {
+		global.Log.Errorf("setEmail() 更新配置数据失败: %v", err)
+		fmt.Println("更新配置数据失败:", err)
 		return
 	}
 }
 
 // setMapping 设置映射
-// 格式：set-mapping [name] [public_port] [target_addr]
+// 格式：set-mapping <name> <public_port> <target_addr>
 func addMapping(args []string) {
 	length := len(args)
 	if length != 3 {
@@ -291,11 +300,15 @@ func addMapping(args []string) {
 		Status:     "close",
 	})
 	if err != nil {
+		global.Log.Errorf("addMapping() 插入映射数据失败: %v", err)
+		fmt.Println("插入映射数据失败:", err)
 		return
 	}
 	global.ConnPool.Set(args[0], args[1], args[2])
 }
 
+// delMapping 删除映射
+// 格式：del-mapping <name>
 func delMapping(args []string) {
 	if len(args) != 1 {
 		fmt.Printf("无效的参数 '%s'，正确格式为：del-mapping <name>\n", args)
@@ -308,10 +321,14 @@ func delMapping(args []string) {
 
 	err := models.DeleteMapByName(global.DB, args[0])
 	if err != nil {
+		global.Log.Errorf("delMapping() 删除映射数据失败: %v", err)
+		fmt.Println("删除映射数据失败:", err)
 		return
 	}
 }
 
+// updMapping 更新映射
+// 格式：upd-mapping <name> <port> <addr>
 func updMapping(args []string) {
 	if len(args) != 3 {
 		fmt.Printf("无效的参数 '%s'，正确格式为：upd-mapping <name> <port> <addr>\n", args)
@@ -336,7 +353,8 @@ func updMapping(args []string) {
 
 	_, err = models.UpdateMap(global.DB, args[0], args[1], args[2])
 	if err != nil {
-		fmt.Println(err)
+		global.Log.Errorf("updMapping() 更新映射数据失败: %v", err)
+		fmt.Println("更新映射数据失败:", err)
 		return
 	}
 }

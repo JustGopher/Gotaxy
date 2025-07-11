@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"github.com/xtaci/smux"
@@ -24,7 +25,8 @@ var currentSession atomic.Value
 func StartServer(ctx context.Context) {
 	pool := global.ConnPool
 	if pool == nil {
-		log.Fatal("连接池未初始化")
+		global.Log.Info("StartServer() 连接池未初始化")
+		panic("StartServer() 连接池未初始化")
 	}
 	allPortMap := pool.GetAllPort()
 	for port, add := range allPortMap {
@@ -37,25 +39,27 @@ func StartServer(ctx context.Context) {
 		go startPublicListener(ctx, pubPort)
 	}
 	<-ctx.Done()
-	log.Println("服务端收到退出信号，停止中...")
+	fmt.Println("收到退出信号，停止中...")
 }
 
 // 不断接受控制连接
 func waitControlConn(ctx context.Context) {
 	tlsCfg, err := LoadServerTLSConfig("certs/server.crt", "certs/server.key", "certs/ca.crt")
 	if err != nil {
-		log.Fatalf("加载 TLS 配置失败: %v", err)
+		global.Log.Error("waitControlConn() 加载 TLS 配置失败: ", err)
+		panic("加载 TLS 配置失败: " + err.Error())
 	}
 
 	listener, err := tls.Listen("tcp", ":"+global.Config.ListenPort, tlsCfg)
 	if err != nil {
-		log.Fatalf("监听失败: %v", err)
+		global.Log.Error("waitControlConn() 监听失败: ", err)
+		panic("监听失败: " + err.Error())
 	}
-	log.Printf("控制端口监听 :%s 中...\n", global.Config.ListenPort)
+	fmt.Printf("控制端口监听 %s 端口中...\n", global.Config.ListenPort)
 
 	go func() {
 		<-ctx.Done()
-		log.Println("关闭控制连接监听")
+		fmt.Println("关闭控制连接监听")
 		_ = listener.Close()
 	}()
 
@@ -66,19 +70,21 @@ func waitControlConn(ctx context.Context) {
 			case <-ctx.Done():
 				return // 正常退出
 			default:
-				log.Println("控制连接接入失败:", err)
+				fmt.Println("控制连接接入失败:", err)
+				global.Log.Error("控制连接接入失败:", err)
 				continue
 			}
 		}
 
 		session, err := smux.Server(conn, nil)
 		if err != nil {
-			log.Println("创建 smux 会话失败:", err)
+			fmt.Println("创建会话失败:", err)
+			global.Log.Error("创建会话失败:", err)
 			_ = conn.Close()
 			continue
 		}
 
-		log.Println("smux 会话建立成功")
+		global.Log.Info("会话建立成功")
 		currentSession.Store(session)
 	}
 }
@@ -87,14 +93,20 @@ func waitControlConn(ctx context.Context) {
 func startPublicListener(ctx context.Context, pubPort string) {
 	listener, err := net.Listen("tcp", ":"+pubPort)
 	if err != nil {
-		log.Fatalf("监听公网端口 %s 失败: %v", pubPort, err)
+		if strings.Contains(err.Error(), "address already in use") {
+			log.Printf("端口 %s 已被占用", pubPort)
+			return
+		}
+		fmt.Printf("监听端口 %s 失败: %v\n", pubPort, err)
+		return
 	}
 	target := portMap[pubPort]
-	log.Printf("公网监听 :%s 映射到客户端内网 %s\n", pubPort, target)
+	log.Printf("监听端口 %s 映射到客户端 %s\n", pubPort, target)
 
 	go func() {
 		<-ctx.Done()
-		log.Printf("关闭公网端口监听 :%s", pubPort)
+		global.Log.Info("关闭公网端口监听 :", pubPort)
+		fmt.Printf("关闭公网端口监听 :%s", pubPort)
 		_ = listener.Close()
 	}()
 
@@ -105,14 +117,15 @@ func startPublicListener(ctx context.Context, pubPort string) {
 			case <-ctx.Done():
 				return
 			default:
-				log.Printf("公网连接失败: %v", err)
+				global.Log.Error("listener.Accept() 连接失败:", err)
+				fmt.Printf("连接失败: %v", err)
 				continue
 			}
 		}
 		// 正常 smux 流转发
 		sessionVal := currentSession.Load()
 		if sessionVal == nil {
-			log.Println("无有效客户端连接，关闭连接")
+			fmt.Println("无有效客户端连接，关闭连接")
 			_ = publicConn.Close()
 			continue
 		}
@@ -120,7 +133,8 @@ func startPublicListener(ctx context.Context, pubPort string) {
 
 		stream, err := session.OpenStream()
 		if err != nil {
-			log.Printf("smux stream 创建失败: %v", err)
+			global.Log.Error("session.OpenStream() smux stream创建失败: ", err)
+			fmt.Printf("smux stream 创建失败: %v", err)
 			_ = publicConn.Close()
 			continue
 		}
@@ -128,13 +142,13 @@ func startPublicListener(ctx context.Context, pubPort string) {
 		// 通知客户端目标地址
 		_, err = stream.Write([]byte(target + "\n"))
 		if err != nil {
-			log.Println("写入目标地址失败:", err)
+			global.Log.Error("写入目标地址失败:", err)
 			_ = publicConn.Close()
 			_ = stream.Close()
 			continue
 		}
 
-		log.Printf("建立转发: 公网 :%s <=> 客户端本地 %s", pubPort, target)
+		fmt.Printf("建立转发: 端口 %s <=> 客户端本地 %s", pubPort, target)
 		go proxy(publicConn, stream)
 		go proxy(stream, publicConn)
 	}
@@ -144,12 +158,14 @@ func startPublicListener(ctx context.Context, pubPort string) {
 func proxy(dst, src net.Conn) {
 	defer func(dst net.Conn) {
 		err := dst.Close()
-		log.Printf("proxy() 关闭连接失败: %v", err)
+		if err != nil {
+			global.Log.Info("proxy() 关闭连接失败: ", err)
+		}
 	}(dst)
 	defer func(src net.Conn) {
 		err := src.Close()
 		if err != nil {
-			log.Printf("proxy() 关闭连接失败: %v", err)
+			global.Log.Info("proxy() 关闭连接失败: ", err)
 		}
 	}(src)
 	_, _ = io.Copy(dst, src)
