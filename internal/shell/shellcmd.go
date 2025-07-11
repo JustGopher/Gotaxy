@@ -144,7 +144,7 @@ func generateCerts(args []string) {
 	}
 
 	// 生成证书
-	err := tlsgen.GenerateServerAndClientCerts(global.ServerIP, "certs", day, "certs/ca.crt", "certs/ca.key")
+	err := tlsgen.GenerateServerAndClientCerts(global.Config.ServerIP, "certs", day, "certs/ca.crt", "certs/ca.key")
 	if err != nil {
 		log.Println("generateCerts() 生成证书失败:", err)
 		return
@@ -176,11 +176,11 @@ func setIP(args []string) {
 		return
 	}
 	// 设置 IP
-	global.ServerIP = ip
+	global.Config.ServerIP = ip
 }
 
 // showIP 显示服务端 IP
 // 格式：show-ip
 func showIP(args []string) {
-	fmt.Println("当前服务端 IP 为：", global.ServerIP)
+	fmt.Println("当前服务端 IP 为：", global.Config.ServerIP)
 }

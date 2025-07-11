@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/global"
 	"log"
 	"strings"
 )
@@ -16,7 +15,7 @@ type Mapping struct {
 	Status     string `json:"status"`
 }
 
-func CreateMapping() {
+func CreateMapping(db *sql.DB) {
 	sqlMap := `Create table if not exists mapping (
     id integer primary key autoincrement,
     name varchar(255) not null unique,
@@ -25,26 +24,26 @@ func CreateMapping() {
     status varchar(255) not null
     );`
 
-	_, err := global.DB.Exec(sqlMap)
+	_, err := db.Exec(sqlMap)
 	if err != nil {
 		log.Printf("创建映射表失败 -> %v", err)
 	}
 }
 
-func InsertMap(m Mapping) {
-	_, err := global.DB.Exec("insert into mapping (name, public_port, target_addr, status) values (?,?,?,?)", m.Name, m.PublicPort, m.TargetAddr, m.Status)
+func InsertMap(db *sql.DB, m Mapping) {
+	_, err := db.Exec("insert into mapping (name, public_port, target_addr, status) values (?,?,?,?)", m.Name, m.PublicPort, m.TargetAddr, m.Status)
 	if err != nil {
 		log.Printf("插入映射数据失败 -> %v", err)
 	}
 }
 
-func GetMapByName(name string) (*Mapping, error) {
+func GetMapByName(db *sql.DB, name string) (*Mapping, error) {
 	if name == "" {
 		return nil, fmt.Errorf("查询映射数据失败！名字不能为空！")
 	}
 
 	query := "select * from mapping where name =? limit 1"
-	row := global.DB.QueryRow(query, name)
+	row := db.QueryRow(query, name)
 
 	var mapping Mapping
 
@@ -58,16 +57,16 @@ func GetMapByName(name string) (*Mapping, error) {
 	return &mapping, nil
 }
 
-func DeleteMapByName(name string) error {
+func DeleteMapByName(db *sql.DB, name string) error {
 	if name == "" {
 		return fmt.Errorf("删除映射数据失败！名字不能为空！")
 	}
 
-	_, err := global.DB.Exec("delete from mapping where name =?", name)
+	_, err := db.Exec("delete from mapping where name =?", name)
 	return err
 }
 
-func UpdateMap(name string, updates map[string]string) (*Mapping, error) {
+func UpdateMap(db *sql.DB, name string, updates map[string]string) (*Mapping, error) {
 	var (
 		keys   []string      //用于存储更新的keys
 		values []interface{} // 用于存储values
@@ -90,7 +89,7 @@ func UpdateMap(name string, updates map[string]string) (*Mapping, error) {
 	values = append(values, name)
 	query := "update mapping set" + " " + strings.Join(keys, ",") + " where name =?"
 
-	_, err := global.DB.Exec(query, values...)
+	_, err := db.Exec(query, values...)
 	if err != nil {
 		return nil, fmt.Errorf("更新映射失败: %v", err)
 	}
@@ -99,7 +98,7 @@ func UpdateMap(name string, updates map[string]string) (*Mapping, error) {
 		updates["name"] = name
 	}
 
-	err = global.DB.QueryRow("select * from mapping where name =?", updates["name"]).Scan(
+	err = db.QueryRow("select * from mapping where name =?", updates["name"]).Scan(
 		&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
 	if err != nil {
 		return nil, fmt.Errorf("查询映射失败: %v", err)

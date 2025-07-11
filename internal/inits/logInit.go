@@ -3,7 +3,6 @@ package inits
 import (
 	"path/filepath"
 
-	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/pkg/logger"
 
 	"go.uber.org/zap"
@@ -11,7 +10,7 @@ import (
 )
 
 // LogInit 日志初始化
-func LogInit() {
+func LogInit(myLog *zap.SugaredLogger) {
 	// 创建日志编码器（通常是 JSON 格式）
 	encoder := logger.GetEncoder()
 	logPath := "./logs"
@@ -37,5 +36,5 @@ func LogInit() {
 	core := zapcore.NewTee(infoCore, errorCore)
 	log := zap.New(core, zap.AddCaller())
 
-	global.Log = log.Sugar()
+	myLog = log.Sugar()
 }

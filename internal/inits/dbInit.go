@@ -8,28 +8,27 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func initDB(db *sql.DB) {
+// DBInit 数据库初始化
+func DBInit(db *sql.DB) *sql.DB {
 	var err error
 
 	db, err = sql.Open("sqlite", "data/data.db")
 	if err != nil {
 		log.Fatalf("打开数据库失败 -> %v", err)
-		return
+		return nil
 	}
-
-	defer func(DB *sql.DB) {
-		err := DB.Close()
-		if err != nil {
-			log.Printf("关闭数据库失败 -> %v", err)
-		}
-	}(db)
 
 	err = db.Ping()
 	if err != nil {
 		log.Printf("数据库连接失败 -> %v", err)
-		return
+		panic(err)
 	}
 
-	models.CreateConfig()
-	models.CreateMapping()
+	err = models.CreateCfgStructure(db)
+	if err != nil {
+		log.Printf("创建配置表结构失败 -> %v", err)
+		return nil
+	}
+	models.CreateMapping(db)
+	return db
 }

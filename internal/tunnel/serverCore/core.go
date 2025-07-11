@@ -47,11 +47,11 @@ func waitControlConn(ctx context.Context) {
 		log.Fatalf("加载 TLS 配置失败: %v", err)
 	}
 
-	listener, err := tls.Listen("tcp", ":"+global.ListenPort, tlsCfg)
+	listener, err := tls.Listen("tcp", ":"+global.Config.ListenPort, tlsCfg)
 	if err != nil {
 		log.Fatalf("监听失败: %v", err)
 	}
-	log.Printf("控制端口监听 :%s 中...\n", global.ListenPort)
+	log.Printf("控制端口监听 :%s 中...\n", global.Config.ListenPort)
 
 	go func() {
 		<-ctx.Done()
