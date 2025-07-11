@@ -3,7 +3,7 @@ package global
 import (
 	"context"
 	"database/sql"
-	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/pool"
+	"github/JustGopher/Gotaxy/internal/pool"
 )
 
 var (
