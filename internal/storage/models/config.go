@@ -18,6 +18,7 @@ func CreateCfgStructure(db *sql.DB) error {
     key varchar(255) not null unique,
     value varchar(255) not null
 	);`
+
 	_, err := db.Exec(sqlCon)
 	if err != nil {
 		log.Printf("创建配置表结构失败 -> %v", err)
@@ -26,8 +27,8 @@ func CreateCfgStructure(db *sql.DB) error {
 	return nil
 }
 
-// CreateCfg 创建配置数据
-func CreateCfg(db *sql.DB, key string, value string) error {
+// InsertCfg 创建配置数据
+func InsertCfg(db *sql.DB, key string, value string) error {
 	_, err := db.Exec("insert into config (key, value) values (?,?)", key, value)
 	if err != nil {
 		log.Printf("插入配置数据失败 -> %v", err)
@@ -43,8 +44,11 @@ func GetAllCfg(db *sql.DB) (map[string]string, error) {
 		log.Printf("查询配置数据失败 -> %v", err)
 		return nil, err
 	}
+
 	defer rows.Close()
+
 	configMap := make(map[string]string)
+
 	for rows.Next() {
 		var key, value string
 		err := rows.Scan(&key, &value)

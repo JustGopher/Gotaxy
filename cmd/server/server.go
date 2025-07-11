@@ -11,14 +11,12 @@ import (
 func main() {
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 
-	global.ConnPool = pool.NewPool()
-	global.ConnPool.Set("9080", "127.0.0.1:8080")
-	global.ConnPool.Set("9081", "127.0.0.1:8081")
-
 	global.DB = inits.DBInit(global.DB)
 	inits.LogInit(global.Log)
 
-	global.Config.ConfigLoad(global.DB)
+	global.ConnPool = pool.NewPool()
+
+	global.Config.ConfigLoad(global.DB, global.ConnPool)
 
 	sh := shell.New()
 	shell.RegisterCMD(sh)

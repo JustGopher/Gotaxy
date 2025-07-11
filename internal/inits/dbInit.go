@@ -29,6 +29,11 @@ func DBInit(db *sql.DB) *sql.DB {
 		log.Printf("创建配置表结构失败 -> %v", err)
 		return nil
 	}
-	models.CreateMapping(db)
+
+	err = models.CreateMpgStructure(db)
+	if err != nil {
+		log.Printf("创建映射表结构失败 -> %v", err)
+		return nil
+	}
 	return db
 }
