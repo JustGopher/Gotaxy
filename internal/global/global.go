@@ -3,8 +3,8 @@ package global
 import (
 	"context"
 	"database/sql"
-	"github/JustGopher/Gotaxy/internal/config"
 
+	"github/JustGopher/Gotaxy/internal/config"
 	"github/JustGopher/Gotaxy/internal/pool"
 
 	"go.uber.org/zap"

@@ -3,6 +3,7 @@ package inits
 import (
 	"path/filepath"
 
+	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/pkg/logger"
 
 	"go.uber.org/zap"
@@ -36,5 +37,5 @@ func LogInit(myLog *zap.SugaredLogger) {
 	core := zapcore.NewTee(infoCore, errorCore)
 	log := zap.New(core, zap.AddCaller())
 
-	myLog = log.Sugar()
+	global.Log = log.Sugar()
 }

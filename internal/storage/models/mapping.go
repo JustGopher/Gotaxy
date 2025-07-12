@@ -56,7 +56,7 @@ func GetAllMpg(db *sql.DB) ([]Mapping, error) {
 		var m Mapping
 		err := rows.Scan(&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetAllMpg() 解析映射数据失败: %v", err)
 		}
 		mappingSli = append(mappingSli, m)
 	}
@@ -70,7 +70,7 @@ func DeleteMapByName(db *sql.DB, name string) error {
 	}
 
 	_, err := db.Exec("delete from mapping where name =?", name)
-	return err
+	return fmt.Errorf("DeleteMapByName() 删除映射失败: %v", err)
 }
 
 // UpdateMap 更新映射

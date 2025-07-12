@@ -2,15 +2,17 @@ package inits
 
 import (
 	"database/sql"
+
 	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/internal/storage/models"
+
 	_ "modernc.org/sqlite"
 )
 
 // DBInit 数据库初始化
-func DBInit(db *sql.DB) *sql.DB {
+func DBInit() *sql.DB {
 	var err error
-	db, err = sql.Open("sqlite", "data/data.db")
+	db, err := sql.Open("sqlite", "data/data.db")
 	if err != nil {
 		global.Log.Errorf("DBInit() 打开数据库失败 -> %v", err)
 		panic(err)

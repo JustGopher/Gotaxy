@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/global"
 	"io"
 	"log"
 	"net"
 	"os"
 	"strings"
 	"sync/atomic"
+
+	"github/JustGopher/Gotaxy/internal/global"
 
 	"github.com/xtaci/smux"
 )
