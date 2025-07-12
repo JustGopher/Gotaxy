@@ -1,6 +1,6 @@
 # Gotaxy
 
-<img align="right" width="250px"  src="docs/images/logo2.png"  alt="logo"> 
+<img align="right" width="280px"  src="docs/images/logo2.png"  alt="logo"> 
 
 🚀 Gotaxy 是一款基于 Go 语言开发的轻量级内网穿透工具，帮助开发者将内网服务安全、便捷地暴露到公网。
 
