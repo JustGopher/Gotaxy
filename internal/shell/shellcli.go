@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github/JustGopher/Gotaxy/internal/tunnel/serverCore/global"
+	"github/JustGopher/Gotaxy/internal/global"
 
 	"github.com/chzyer/readline"
 )
