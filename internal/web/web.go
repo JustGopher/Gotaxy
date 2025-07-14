@@ -16,6 +16,8 @@ var tmpl *template.Template
 func Start() {
 	tmpl = template.Must(template.ParseFS(tmplFS, "templates/*.html"))
 	http.HandleFunc("/", index)
+	http.HandleFunc("/getConf", GetConf)
+	http.HandleFunc("/updateConf", UpdateConf)
 	fmt.Println("Web 服务启动，监听 9001 端口...")
 	err := http.ListenAndServe(":9001", nil)
 	if err != nil {
