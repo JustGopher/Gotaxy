@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github/JustGopher/Gotaxy/internal/web"
 
 	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/internal/inits"
@@ -20,6 +21,8 @@ func main() {
 	global.Config.ConfigLoad(global.DB, global.ConnPool)
 
 	global.Log.Info("Gotaxy 启动成功")
+
+	go web.Start()
 
 	sh := shell.New()
 	shell.RegisterCMD(sh)
