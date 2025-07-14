@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github/JustGopher/Gotaxy/internal/config"
 	"github/JustGopher/Gotaxy/internal/pool"
 
 	"go.uber.org/zap"
@@ -13,10 +14,7 @@ var (
 	Ctx      context.Context
 	Cancel   context.CancelFunc
 	ConnPool *pool.Pool
-	// ListenPort 服务端监听端口
-	ListenPort string
-	// ServerIP 服务端公网ip
-	ServerIP string
 	Log      *zap.SugaredLogger
 	DB       *sql.DB
+	Config   config.Config
 )

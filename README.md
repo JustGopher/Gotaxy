@@ -1,49 +1,56 @@
 # Gotaxy
 
-<img align="right" width="280px"  src="docs/images/logo.png"  alt="logo"> 
+<img align="right" width="280px"  src="docs/images/logo2.png"  alt="logo"> 
 
 🚀 Gotaxy 是一款基于 Go 语言开发的轻量级内网穿透工具，帮助开发者将内网服务安全、便捷地暴露到公网。
 
-> _"Go beyond NAT, with style."_
+[//]: # (<div style=" line-height: 2; background: rgba&#40;86,86,86,0.2&#41;; border-left: .25em solid #814b4b; padding: .8em 6em .8em .5em;display: inline; box-decoration-break: clone; -webkit-box-decoration-break: clone;border-radius: 0 4px 4px 0;">&nbsp;"Go beyond NAT, with style."_ &nbsp;</div>)
 
-## ✨ TODO
 
-- 🧩 支持端口转发，将内网服务暴露到公网
-- 🔒 加密传输，保护数据安全
-- 🧰 简洁 CLI 工具，易于部署
-- 📦 支持多平台，Windows、Linux、MacOS 等
-- 🔗 支持自定义域名和自定义端口
-- 📊 支持流量统计，方便了解使用情况
-- 🌐 服务端通过 Web 面板控制，管理方便
-- 🔄 后续将支持多客户端、 TCP/UDP代理等功能
+#### _"Go beyond NAT, with style."_
+
+
 
 ---
 
-## 🚀 快速开始
+###  🚀 快速开始
 
-### 服务端启动
+#### 服务端启动
 
 ```bash
 go run cmd/server/server.go
 ```
 
-### 客户端连接
+#### 客户端连接
 
 ```bash
-go run cmd/client/client.go
+go run cmd/client/client.go -h ip -p port
 ```
 ---
 
-## 需求文档
+### 需求文档
 
 详细需求分析请参阅 [REQUIREMENTS.md](docs/REQUIREMENTS.md) 文件。
 
 ---
 
-## 提交贡献
+### 提交贡献 
 
 欢迎提交 Issue 和 Pull Request。
 
 如果要贡献代码，请查阅 [CONTRIBUTING.md.md](docs/CONTRIBUTING.md) 文件
 
 提交代码请阅读 [COMMIT_CONVENTION.md](docs/COMMIT_CONVENTION.md)，我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范
+
+[//]: # (---)
+
+[//]: # (<h3 align="left">贡献墙</h3>)
+
+[//]: # ()
+[//]: # (<a href="https://github.com/JustGopher/Gotaxy/graphs/contributors">)
+
+[//]: # (    <img src="https://contri.buzz/api/wall?repo=JustGopher/Gotaxy&onlyAvatars=true" alt="Contributors' Wall for JustGopher/Gotaxy" />)
+
+[//]: # (</a>)
+
+<br />

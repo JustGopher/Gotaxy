@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/tunnel/clientCore"
 	"log"
 	"os"
 	"strings"
+
+	"github/JustGopher/Gotaxy/internal/tunnel/clientCore"
 
 	"github.com/urfave/cli/v2"
 )

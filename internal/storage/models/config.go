@@ -3,100 +3,66 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"github/JustGopher/Gotaxy/internal/global"
-	"log"
-	"strings"
 )
 
+// Config 配置表结构
 type Config struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	ServerIP   string `json:"server_ip"`
-	ListenPost string `json:"Listen_post"`
+	ID    int    `json:"id"`
+	Key   string `json:"key"` // unique
+	Value string `json:"value"`
 }
 
-func CreateConfig() {
+// CreateCfgStructure 创建配置表结构
+func CreateCfgStructure(db *sql.DB) error {
 	sqlCon := `Create table if not exists config (
-    id integer primary key autoincrement,
-    name varchar(255) not null unique,
-    server_ip varchar(255) not null,
-    listen_post varchar(255) not null
-	);`
-
-	_, err := global.DB.Exec(sqlCon)
+    id integer primary key,
+    key varchar(255) not null unique,
+    value varchar(255) not null);`
+	_, err := db.Exec(sqlCon)
 	if err != nil {
-		log.Printf("创建配置表失败 -> %v", err)
+		return fmt.Errorf("CreateCfgStructure() 创建配置表结构失败 -> %v", err)
 	}
+	return nil
 }
 
-func InsertCon(con Config) {
-	_, err := global.DB.Exec("insert into config (name, server_ip, listen_post) values (?, ?, ?)", con.Name, con.ServerIP, con.ListenPost)
+// InsertCfg 创建配置数据
+func InsertCfg(db *sql.DB, key string, value string) error {
+	_, err := db.Exec("insert into config ('key', value) values (?,?)", key, value)
 	if err != nil {
-		log.Printf("插入配置数据失败 -> %v", err)
+		return fmt.Errorf("InsertCfg() 插入配置数据失败 -> %v", err)
 	}
+	return nil
 }
 
-func GetConByName(name string) (*Config, error) {
-
-	if name == "" {
-		return nil, fmt.Errorf("查询配置数据失败！名字不能为空！")
+// GetAllCfg 获取所有配置数据
+func GetAllCfg(db *sql.DB) (map[string]string, error) {
+	rows, err := db.Query("select key,value from config")
+	if err != nil {
+		return nil, fmt.Errorf("GetAllCfg() 查询配置数据失败 -> %v", err)
 	}
 
-	query := "select * from config where name = ? limit 1"
-	row := global.DB.QueryRow(query, name)
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
 
-	var config Config
+	configMap := make(map[string]string)
 
-	err := row.Scan(&config.ID, &config.Name, &config.ServerIP, &config.ListenPost)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
+	for rows.Next() {
+		var key, value string
+		err := rows.Scan(&key, &value)
+		if err != nil {
+			return nil, fmt.Errorf("扫描配置数据失败 -> %v", err)
+		}
+		configMap[key] = value
 	}
-	return &config, nil
+	return configMap, nil
 }
 
-func DeleteConByName(name string) error {
-	if name == "" {
-		return fmt.Errorf("删除配置数据失败！名字不能为空！")
-	}
-
-	_, err := global.DB.Exec("delete from config where name =?", name)
-	return err
-}
-
-func UpdateCon(name string, updates map[string]string) (*Config, error) {
-	var (
-		keys   []string      //用于存储更新的keys
-		values []interface{} // 用于存储values
-		config Config
-	)
-
-	if name == "" {
-		return nil, fmt.Errorf("更新配置字段失败！名字不能为空！")
-	}
-
-	if len(updates) == 0 {
-		return nil, fmt.Errorf("没有要更新的字段！")
-	}
-
-	for field, value := range updates {
-		keys = append(keys, field+" = ?")
-		values = append(values, value)
-	}
-
-	values = append(values, name)
-	query := "update config set" + " " + strings.Join(keys, ",") + " where name =?"
-
-	_, err := global.DB.Exec(query, values...)
+// UpdateCfg 更新配置数据
+func UpdateCfg(db *sql.DB, key string, value string) error {
+	_, err := db.Exec("update config set value = ? where key = ?", value, key)
 	if err != nil {
-		return nil, fmt.Errorf("更新配置失败: %v", err)
+		return fmt.Errorf("更新配置数据失败 -> %v", err)
 	}
-
-	err = global.DB.QueryRow("select * from config where name =?", updates["name"]).Scan(
-		&config.ID, &config.Name, &config.ServerIP, &config.ListenPost)
-	if err != nil {
-		return nil, fmt.Errorf("查询更新后的配置失败: %v", err)
-	}
-	return &config, nil
+	return nil
 }

@@ -2,22 +2,29 @@ package main
 
 import (
 	"context"
+	"github/JustGopher/Gotaxy/internal/web"
+
 	"github/JustGopher/Gotaxy/internal/global"
+	"github/JustGopher/Gotaxy/internal/inits"
 	"github/JustGopher/Gotaxy/internal/pool"
-	shell2 "github/JustGopher/Gotaxy/internal/shell"
+	"github/JustGopher/Gotaxy/internal/shell"
 )
 
 func main() {
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 
+	global.DB = inits.DBInit()
+	inits.LogInit(global.Log)
+
 	global.ConnPool = pool.NewPool()
-	global.ConnPool.Set("9080", "127.0.0.1:8080")
-	global.ConnPool.Set("9081", "127.0.0.1:8081")
 
-	global.ListenPort = "9000"
-	global.ServerIP = "127.0.0.1"
+	global.Config.ConfigLoad(global.DB, global.ConnPool)
 
-	sh := shell2.New()
-	shell2.RegisterCMD(sh)
+	global.Log.Info("Gotaxy 启动成功")
+
+	go web.Start()
+
+	sh := shell.New()
+	shell.RegisterCMD(sh)
 	sh.Run()
 }

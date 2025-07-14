@@ -11,7 +11,7 @@ import (
 )
 
 // LogInit 日志初始化
-func LogInit() {
+func LogInit(myLog *zap.SugaredLogger) {
 	// 创建日志编码器（通常是 JSON 格式）
 	encoder := logger.GetEncoder()
 	logPath := "./logs"

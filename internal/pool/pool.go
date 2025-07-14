@@ -11,6 +11,7 @@ import (
 
 // Mapping 单个映射关系
 type Mapping struct {
+	Name       string // 规则名称，例如 "rule1"
 	PublicPort string // 公网监听端口，例如 "9080"
 	TargetAddr string // 映射目标地址，例如 "127.0.0.1:8080"
 	Status     string // 连接状态，例如 "active", "inactive"
@@ -31,12 +32,13 @@ func NewPool() *Pool {
 }
 
 // Set 添加新映射关系
-func (p *Pool) Set(port, target string) {
+func (p *Pool) Set(name, port, target string) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.totalConnections++
 	key := fmt.Sprintf("%s%v", "rule", p.totalConnections+1)
 	p.table[key] = &Mapping{
+		Name:       name,
 		PublicPort: port,
 		TargetAddr: target,
 		Status:     "inactive",
