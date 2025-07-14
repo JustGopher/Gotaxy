@@ -25,11 +25,18 @@ func GetConf(w http.ResponseWriter, r *http.Request) {
 
 // UpdateConf 更新配置
 func UpdateConf(w http.ResponseWriter, r *http.Request) {
+	conf := global.Config
 	db := global.DB
+	err := json.NewDecoder(r.Body).Decode(&conf)
+	if err != nil {
+		err := fmt.Errorf("反序列化失败，err：%w", err)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
 	configFields := map[string]string{
-		"server_ip":   r.FormValue("server_ip"),
-		"listen_port": r.FormValue("listen_port"),
-		"email":       r.FormValue("email"),
+		"server_ip":   conf.ServerIP,
+		"listen_port": conf.ListenPort,
+		"email":       conf.Email,
 		// 新增字段可直接在此处添加
 	}
 
