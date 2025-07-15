@@ -28,9 +28,9 @@ func RegisterCMD(sh *Shell) {
 	sh.Register("set-ip", setIP)
 	sh.Register("set-port", setPort)
 	sh.Register("set-email", setEmail)
-	sh.Register("add-mapping", addMapping)
-	sh.Register("del-mapping", delMapping)
-	sh.Register("upd-mapping", updMapping)
+	sh.Register("add-mapping", AddMapping)
+	sh.Register("del-mapping", DelMapping)
+	sh.Register("upd-mapping", UpdMapping)
 	sh.Register("heart", Heart)
 }
 
@@ -70,8 +70,8 @@ func generateCA(args []string) {
 		input := args[0]
 		if input == "-overwrite" {
 			overwrite = true
-		} else if d, err := strconv.Atoi(input); err == nil && d > 0 {
-			if err != nil || d <= 0 {
+		} else if d, err := strconv.Atoi(input); err == nil {
+			if d <= 0 {
 				fmt.Printf("无效的有效期参数 '%s'，请传入正整数，例如：gen-ca 10\n", input)
 				return
 			}
@@ -84,8 +84,8 @@ func generateCA(args []string) {
 	// 如果为两个参数
 	if length == 2 {
 		// 第一个参数为整数
-		if d, err := strconv.Atoi(args[0]); err == nil && d > 0 {
-			if err != nil || d <= 0 {
+		if d, err := strconv.Atoi(args[0]); err == nil {
+			if d <= 0 {
 				fmt.Printf("无效的参数 '%s'，正确格式为：gen-ca [正整数] [-overwrite]\n", args[0])
 				return
 			}
@@ -183,7 +183,7 @@ func showMapping(args []string) {
 	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus")
 
 	for _, v := range mpg {
-		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Status)
+		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Enable)
 	}
 }
 
@@ -271,17 +271,17 @@ func setEmail(args []string) {
 	}
 }
 
-// setMapping 设置映射
-// 格式：set-mapping <name> <public_port> <target_addr>
-func addMapping(args []string) {
+// AddMapping 设置映射
+// 格式：add-mapping <name> <public_port> <target_addr>
+func AddMapping(args []string) {
 	length := len(args)
 	if length != 3 {
-		fmt.Printf("无效的参数 '%s'，正确格式为：set-mapping <name> <public_port> <target_addr>\n", args)
+		fmt.Printf("无效的参数 '%s'，正确格式为：add-mapping <name> <public_port> <target_addr>\n", args)
 		return
 	}
 
 	if args[0] == "" || args[1] == "" || args[2] == "" {
-		fmt.Println("参数缺失!，正确格式为：set-mapping <name> <public_port> <target_addr>")
+		fmt.Println("参数缺失!，正确格式为：add-mapping <name> <public_port> <target_addr>")
 		return
 	}
 
@@ -300,7 +300,7 @@ func addMapping(args []string) {
 		Name:       args[0],
 		PublicPort: args[1],
 		TargetAddr: args[2],
-		Status:     "close",
+		Enable:     "close",
 	})
 	if err != nil {
 		global.Log.Errorf("addMapping() 插入映射数据失败: %v", err)
@@ -310,9 +310,9 @@ func addMapping(args []string) {
 	global.ConnPool.Set(args[0], args[1], args[2])
 }
 
-// delMapping 删除映射
+// DelMapping 删除映射
 // 格式：del-mapping <name>
-func delMapping(args []string) {
+func DelMapping(args []string) {
 	if len(args) != 1 {
 		fmt.Printf("无效的参数 '%s'，正确格式为：del-mapping <name>\n", args)
 	}
@@ -330,10 +330,10 @@ func delMapping(args []string) {
 	}
 }
 
-// updMapping 更新映射
+// UpdMapping 更新映射
 // 格式：upd-mapping <name> <port> <addr>
-func updMapping(args []string) {
-	if len(args) != 3 {
+func UpdMapping(args []string) {
+	if len(args) != 4 {
 		fmt.Printf("无效的参数 '%s'，正确格式为：upd-mapping <name> <port> <addr>\n", args)
 		return
 	}
@@ -354,7 +354,7 @@ func updMapping(args []string) {
 		return
 	}
 
-	_, err = models.UpdateMap(global.DB, args[0], args[1], args[2])
+	_, err = models.UpdateMap(global.DB, args[0], args[1], args[2], args[3])
 	if err != nil {
 		global.Log.Errorf("updMapping() 更新映射数据失败: %v", err)
 		fmt.Println("更新映射数据失败:", err)

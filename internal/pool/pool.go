@@ -15,7 +15,7 @@ type Mapping struct {
 	PublicPort string // 公网监听端口，例如 "9080"
 	TargetAddr string // 映射目标地址，例如 "127.0.0.1:8080"
 	Status     string // 连接状态，例如 "active", "inactive"
-	Enable     string
+	Enable     bool   // 是否启用，例如 true, false
 }
 
 // Pool 映射关系池
@@ -74,4 +74,19 @@ func (p *Pool) All() []*Mapping {
 		list = append(list, m)
 	}
 	return list
+}
+
+// UpdateEnable 更新映射的启用状态
+func (p *Pool) UpdateEnable(name string, enable bool) bool {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	// 查找对应名称的映射
+	for _, mapping := range p.table {
+		if mapping.Name == name {
+			mapping.Enable = enable
+			return true
+		}
+	}
+	return false
 }

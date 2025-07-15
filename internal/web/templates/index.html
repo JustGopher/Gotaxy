@@ -116,6 +116,92 @@
         .modal-content button:hover {
             background-color: #45a049;
         }
+
+        /* 映射表格样式 */
+        .mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .mapping-table th,
+        .mapping-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .mapping-table th {
+            background-color: #f2f2f2;
+        }
+
+        .mapping-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .mapping-controls {
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #ffc107;
+            color: black;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 5px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .status-running {
+            color: green;
+            font-weight: bold;
+        }
+
+        .status-stopped {
+            color: red;
+        }
     </style>
 </head>
 
@@ -178,10 +264,55 @@
     </div>
 
 
-
     <div>
         <!-- 映射列表管理 -->
+        <h2>端口映射管理</h2>
+        <div class="mapping-controls">
+            <button id="addMappingBtn" class="btn-primary">添加新映射</button>
+            <button id="refreshMappingsBtn">刷新列表</button>
+        </div>
 
+        <div id="mappingMessage" class="message" style="display: none;"></div>
+
+        <table id="mappingTable" class="mapping-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>公共端口</th>
+                    <th>目标地址</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="mappingList">
+                <!-- 映射列表将通过JavaScript动态加载 -->
+            </tbody>
+        </table>
+
+        <!-- 添加/编辑映射的弹窗 -->
+        <div id="mappingModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3 id="modalTitle">添加新映射</h3>
+                <form id="mappingForm">
+                    <div class="form-group">
+                        <label for="name">名称:</label>
+                        <input type="text" id="name" name="name" placeholder="可选，留空将自动生成">
+                    </div>
+                    <div class="form-group">
+                        <label for="publicPort">公共端口:</label>
+                        <input type="number" id="publicPort" name="publicPort" required min="1" max="65535">
+                    </div>
+                    <div class="form-group">
+                        <label for="targetAddr">目标地址:</label>
+                        <input type="text" id="targetAddr" name="targetAddr" required
+                            placeholder="例如: 192.168.1.100:80">
+                    </div>
+                    <button type="submit" id="saveMapping">保存</button>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -290,6 +421,188 @@
                 // 直接触发下载，错误会在后端处理
                 window.location.href = '/api/download-certs';
             });
+
+            // 映射管理相关代码
+            const mappingList = document.getElementById('mappingList');
+            const mappingModal = document.getElementById('mappingModal');
+            const mappingForm = document.getElementById('mappingForm');
+            const modalTitle = document.getElementById('modalTitle');
+            const mappingMessage = document.getElementById('mappingMessage');
+            const addMappingBtn = document.getElementById('addMappingBtn');
+            const refreshMappingsBtn = document.getElementById('refreshMappingsBtn');
+            const closeModalBtn = document.querySelector('.close');
+
+            // 加载映射列表
+            function loadMappings() {
+                fetch('/api/mappings')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            mappingList.innerHTML = '';
+                            if (data.data.length === 0) {
+                                mappingList.innerHTML = '<tr><td colspan="5" style="text-align: center;">暂无映射数据</td></tr>';
+                                return;
+                            }
+
+                            data.data.forEach(mapping => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${mapping.id}</td>
+                                    <td>${mapping.name || '-'}</td>
+                                    <td>${mapping.publicPort}</td>
+                                    <td>${mapping.targetAddr}</td>
+                                    <td><span class="status-${mapping.enable}">${mapping.enable === 'running' ? '运行中' : '已停止'}</span></td>
+                                    <td>
+                                        <button class="btn-${mapping.enable === 'running' ? 'warning' : 'success'} toggle-mapping" data-id="${mapping.id}" data-enable="${mapping.enable === 'running' ? 'stopped' : 'running'}">
+                                            ${mapping.enable === 'running' ? '停止' : '启动'}
+                                        </button>
+                                        <button class="btn-danger delete-mapping" data-id="${mapping.id}">删除</button>
+                                    </td>
+                                `;
+                                mappingList.appendChild(row);
+                            });
+
+                            // 添加启用/禁用按钮事件
+                            document.querySelectorAll('.toggle-mapping').forEach(button => {
+                                button.addEventListener('click', function () {
+                                    const id = this.getAttribute('data-id');
+                                    const enable = this.getAttribute('data-enable');
+                                    toggleMapping(id, enable);
+                                });
+                            });
+
+                            // 添加删除按钮事件
+                            document.querySelectorAll('.delete-mapping').forEach(button => {
+                                button.addEventListener('click', function () {
+                                    const id = this.getAttribute('data-id');
+                                    if (confirm('确定要删除此映射吗？')) {
+                                        deleteMapping(id);
+                                    }
+                                });
+                            });
+                        } else {
+                            showMessage('加载映射列表失败: ' + (data.message || '未知错误'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('加载映射列表失败: ' + error.message, 'error');
+                    });
+            }
+
+            // 显示消息
+            function showMessage(text, type) {
+                mappingMessage.textContent = text;
+                mappingMessage.className = 'message ' + type;
+                mappingMessage.style.display = 'block';
+
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    mappingMessage.style.display = 'none';
+                }, 3000);
+            }
+
+            // 打开添加映射模态框
+            addMappingBtn.addEventListener('click', function () {
+                modalTitle.textContent = '添加新映射';
+                mappingForm.reset();
+                mappingModal.style.display = 'block';
+            });
+
+            // 关闭模态框
+            closeModalBtn.addEventListener('click', function () {
+                mappingModal.style.display = 'none';
+            });
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function (event) {
+                if (event.target === mappingModal) {
+                    mappingModal.style.display = 'none';
+                }
+            });
+
+            // 刷新映射列表
+            refreshMappingsBtn.addEventListener('click', loadMappings);
+
+            // 删除映射
+            function deleteMapping(id) {
+                fetch(`/api/mapping/delete?id=${id}`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showMessage('删除成功', 'success');
+                            loadMappings();
+                        } else {
+                            showMessage('删除失败: ' + (data.message || '未知错误'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('删除失败: ' + error.message, 'error');
+                    });
+            }
+
+            // 启用/禁用映射
+            function toggleMapping(id, enable) {
+                fetch('/api/mapping/enable', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: parseInt(id),
+                        enable: enable
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showMessage(`映射${enable === 'running' ? '启用' : '禁用'}成功`, 'success');
+                            loadMappings();
+                        } else {
+                            showMessage(`映射${enable === 'running' ? '启用' : '禁用'}失败: ` + (data.message || '未知错误'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage(`映射${enable === 'running' ? '启用' : '禁用'}失败: ` + error.message, 'error');
+                    });
+            }
+
+            // 表单提交
+            mappingForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const formData = {
+                    name: document.getElementById('name').value,
+                    publicPort: parseInt(document.getElementById('publicPort').value),
+                    targetAddr: document.getElementById('targetAddr').value,
+                    enable: 'stopped' // 默认为停止状态
+                };
+
+                fetch('/api/mapping/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showMessage('添加成功', 'success');
+                            mappingModal.style.display = 'none';
+                            loadMappings();
+                        } else {
+                            showMessage('添加失败: ' + (data.message || '未知错误'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('添加失败: ' + error.message, 'error');
+                    });
+            });
+
+            // 初始加载映射列表
+            loadMappings();
         });
 
         document.addEventListener('DOMContentLoaded', function() {
