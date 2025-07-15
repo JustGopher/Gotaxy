@@ -45,6 +45,44 @@
             background-color: #fcf8e3;
             color: #8a6d3b;
         }
+
+        /* 添加一些基本样式 */
+        #config-section {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -67,10 +105,27 @@
     </div>
 
 
-    <div>
-        <!-- 查看和修改配置 -->
-
+<div>
+    <!-- 查看和修改配置 -->
+    <div id="config-section">
+        <h2>配置管理</h2>
+        <form id="config-form">
+            <div class="form-group">
+                <label for="server_ip">服务器IP:</label>
+                <input type="text" id="server_ip" name="server_ip" value="{{.server_ip}}">
+            </div>
+            <div class="form-group">
+                <label for="listen_port">监听端口:</label>
+                <input type="number" id="listen_port" name="listen_port" value="{{.listen_port}}" min="1" max="65535">
+            </div>
+            <div class="form-group">
+                <label for="email">邮箱:</label>
+                <input type="email" id="email" name="email" value="{{.email}}">
+            </div>
+            <button type="submit">保存配置</button>
+        </form>
     </div>
+</div>
 
 
     <div>
@@ -183,6 +238,50 @@
 
                 // 直接触发下载，错误会在后端处理
                 window.location.href = '/api/download-certs';
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取配置数据
+            fetch('/getConf')
+                .then(response => response.json())
+                .then(data => {
+                    // 填充表单数据
+                    Object.keys(data).forEach(key => {
+                        if (document.getElementById(key)) {
+                            document.getElementById(key).value = data[key];
+                        }
+                    });
+                });
+
+            // 表单提交事件
+            document.getElementById('config-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const configData = {};
+
+                // 收集表单数据
+                for (const [key, value] of formData.entries()) {
+                    configData[key] = value;
+                }
+
+                // 发送更新请求
+                fetch('/updateConf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                })
+                    .then(response => response.text())
+                    .then(message => {
+                        alert(message); // 显示成功消息
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('配置更新失败');
+                    });
             });
         });
     </script>

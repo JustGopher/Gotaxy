@@ -3,7 +3,7 @@ package email
 import (
 	"errors"
 	"fmt"
-	"regexp"
+	"github/JustGopher/Gotaxy/pkg/utils"
 
 	"gopkg.in/gomail.v2"
 )
@@ -16,10 +16,8 @@ func SendEmail(to string, subject string, body string) error {
 	password := "rznfvafkkqqzjddj"
 
 	// 邮箱验证
-	emailPattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
-	re := regexp.MustCompile(emailPattern)
-	matchString := re.MatchString(to)
-	if !matchString {
+	matchEmail := utils.IsValidateEmail(to)
+	if !matchEmail {
 		err := errors.New("邮箱格式错误")
 		return err
 	}

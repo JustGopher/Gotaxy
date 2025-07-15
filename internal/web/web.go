@@ -16,11 +16,13 @@ var tmpl *template.Template
 func Start() {
 	tmpl = template.Must(template.ParseFS(tmplFS, "templates/*.html"))
 	http.HandleFunc("/", index)
+	http.HandleFunc("/getConf", GetConf)
+	http.HandleFunc("/updateConf", UpdateConf)
 
 	// 初始化路由
 	InitRouter()
 
-	fmt.Println("控制面板启动：localhost:9001")
+	fmt.Println("Web 服务启动，监听 9001 端口...")
 	err := http.ListenAndServe(":9001", nil)
 	if err != nil {
 		fmt.Println("Web() 启动失败: ", err)
