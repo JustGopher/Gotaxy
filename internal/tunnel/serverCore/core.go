@@ -5,12 +5,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/heart"
 	"io"
 	"log"
 	"net"
 	"os"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github/JustGopher/Gotaxy/internal/global"
 
@@ -39,8 +41,18 @@ func StartServer(ctx context.Context) {
 	for pubPort := range portMap {
 		go startPublicListener(ctx, pubPort)
 	}
+
+	global.Ring = heart.NewHeartbeatRing(20)
+
 	<-ctx.Done()
 	fmt.Println("收到退出信号，停止中...")
+
+	// 主动关闭当前会话
+	// 从 atomic.Value 中取出当前活跃的 session, 调用 session.Close() 主动关闭连接，防止资源泄露, 这会通知所有基于此会话创建的 stream 关闭。
+	if val := currentSession.Load(); val != nil {
+		session := val.(*smux.Session)
+		_ = session.Close()
+	}
 }
 
 // 不断接受控制连接
@@ -84,6 +96,8 @@ func waitControlConn(ctx context.Context) {
 			_ = conn.Close()
 			continue
 		}
+
+		go startHeartbeat(session, 5*time.Second, global.Ring)
 
 		global.Log.Info("会话建立成功")
 		currentSession.Store(session)
@@ -132,6 +146,8 @@ func startPublicListener(ctx context.Context, pubPort string) {
 		}
 		session, _ := sessionVal.(*smux.Session)
 
+		// OpenStream() 的作用是：在当前控制连接上创建一个逻辑流（可以理解为一条虚拟 TCP 通道）
+		// smux 会把多个这样的 stream 数据复用在一条实际连接上
 		stream, err := session.OpenStream()
 		if err != nil {
 			global.Log.Error("session.OpenStream() smux stream创建失败: ", err)
@@ -141,7 +157,9 @@ func startPublicListener(ctx context.Context, pubPort string) {
 		}
 
 		// 通知客户端目标地址
-		_, err = stream.Write([]byte(target + "\n"))
+		// 在流建立后，服务端会先向客户端写一行数据：告诉它，目标地址是哪个（如 127.0.0.1:8080）。
+		// 客户端拿到这个地址后，就会在自己的本地去连接这个目标地址，然后形成一对 stream <-> 内网本地服务连接 的代理。
+		_, err = stream.Write([]byte("DIRECT\n" + target + "\n"))
 		if err != nil {
 			global.Log.Error("写入目标地址失败:", err)
 			_ = publicConn.Close()
@@ -158,16 +176,10 @@ func startPublicListener(ctx context.Context, pubPort string) {
 // proxy 数据转发
 func proxy(dst, src net.Conn) {
 	defer func(dst net.Conn) {
-		err := dst.Close()
-		if err != nil {
-			global.Log.Info("proxy() 关闭连接失败: ", err)
-		}
+		_ = dst.Close()
 	}(dst)
 	defer func(src net.Conn) {
-		err := src.Close()
-		if err != nil {
-			global.Log.Info("proxy() 关闭连接失败: ", err)
-		}
+		_ = src.Close()
 	}(src)
 	_, _ = io.Copy(dst, src)
 }
@@ -196,4 +208,47 @@ func LoadServerTLSConfig(certFile, keyFile, caFile string) (*tls.Config, error) 
 		ClientCAs:    caCertPool,
 		MinVersion:   tls.VersionTLS12,
 	}, nil
+}
+
+// startHeartbeat 启动心跳检测
+// 每 interval 时间间隔向客户端发送 HEARTBEAT 报文，客户端收到后回复 PONG 报文
+func startHeartbeat(session *smux.Session, interval time.Duration, ring *heart.HeartbeatRing) {
+	go func() {
+		for {
+			time.Sleep(2 * time.Second)
+
+			stream, err := session.OpenStream()
+			if err != nil {
+				global.Log.Error("heartbeat: OpenStream失败:", err)
+				ring.Add(false, 0)
+				continue
+			}
+
+			start := time.Now()
+			_, err = stream.Write([]byte("HEARTBEAT\nPING\n"))
+			if err != nil {
+				global.Log.Warn("heartbeat: 写入失败:", err)
+				ring.Add(false, 0)
+				_ = stream.Close()
+				continue
+			}
+
+			buffer := make([]byte, 4)
+			stream.SetReadDeadline(time.Now().Add(5 * time.Second))
+			_, err = io.ReadFull(stream, buffer)
+			if err != nil || string(buffer) != "PONG" {
+				global.Log.Error("heartbeat: 读失败:", err)
+				ring.Add(false, 0)
+				_ = stream.Close()
+				continue
+			}
+
+			delay := time.Since(start)
+			ring.Add(true, delay)
+			global.Log.Info("收到pong,delay:", delay)
+			_ = stream.Close()
+
+			time.Sleep(interval)
+		}
+	}()
 }

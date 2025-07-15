@@ -15,6 +15,7 @@ type Mapping struct {
 	PublicPort string // 公网监听端口，例如 "9080"
 	TargetAddr string // 映射目标地址，例如 "127.0.0.1:8080"
 	Status     string // 连接状态，例如 "active", "inactive"
+	Enable     string
 }
 
 // Pool 映射关系池

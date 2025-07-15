@@ -39,7 +39,9 @@ func UpdateConf(w http.ResponseWriter, r *http.Request) {
 		"email":       conf.Email,
 		// 新增字段可直接在此处添加
 	}
-
+	// 更新全局配置
+	global.Config = conf
+	// 更新数据库配置
 	for key, value := range configFields {
 		if value == "" {
 			continue

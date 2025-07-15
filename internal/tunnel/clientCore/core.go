@@ -5,13 +5,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/xtaci/smux"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
-
-	"github.com/xtaci/smux"
+	"strings"
 )
 
 // Start 启动
@@ -73,14 +73,36 @@ func LoadClientTLSConfig(certFile, keyFile, caFile string) (*tls.Config, error) 
 // handleStream 处理每个 stream
 func handleStream(stream *smux.Stream) {
 	reader := bufio.NewReader(stream)
-	target, err := reader.ReadString('\n')
+	header, err := reader.ReadString('\n')
 	if err != nil {
 		log.Println("读取目标地址失败:", err)
 		_ = stream.Close()
 		return
 	}
-	target = target[:len(target)-1] // 去除换行
+	switch strings.TrimSpace(header) {
+	case "HEARTBEAT":
+		// 是心跳，读 "ping"，返回 "pong"
+		payload, _ := reader.ReadString('\n')
+		if strings.TrimSpace(payload) == "PING" {
+			_, _ = stream.Write([]byte("PONG"))
+		}
+		_ = stream.Close()
+	case "DIRECT":
+		// 是普通转发请求，读取目标地址
+		target, err := reader.ReadString('\n')
+		if err != nil {
+			log.Println("读取目标地址失败:", err)
+			_ = stream.Close()
+			return
+		}
+		handleForward(strings.TrimSpace(target), stream)
+	default:
+		log.Println("未知类型流:", header)
+		_ = stream.Close()
+	}
+}
 
+func handleForward(target string, stream *smux.Stream) {
 	localConn, err := net.Dial("tcp", target)
 	if err != nil {
 		log.Printf("连接本地服务 %s 失败: %v", target, err)
@@ -113,11 +135,10 @@ func proxy(dst, src net.Conn) {
 // HelloServe 测试服务
 func HelloServe() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		write, err := w.Write([]byte("Hello, World!"))
+		_, err := w.Write([]byte("Hello, World!"))
 		if err != nil {
 			return
 		}
-		fmt.Println(write)
 	})
 
 	err := http.ListenAndServe(":8080", nil)

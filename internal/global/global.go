@@ -3,6 +3,7 @@ package global
 import (
 	"context"
 	"database/sql"
+	"github/JustGopher/Gotaxy/internal/heart"
 
 	"github/JustGopher/Gotaxy/internal/config"
 	"github/JustGopher/Gotaxy/internal/pool"
@@ -17,4 +18,6 @@ var (
 	Log      *zap.SugaredLogger
 	DB       *sql.DB
 	Config   config.Config
+	Ring     *heart.HeartbeatRing
+	IsRun    bool
 )

@@ -31,6 +31,7 @@ func RegisterCMD(sh *Shell) {
 	sh.Register("add-mapping", addMapping)
 	sh.Register("del-mapping", delMapping)
 	sh.Register("upd-mapping", updMapping)
+	sh.Register("heart", Heart)
 }
 
 // start 启动服务端
@@ -43,12 +44,14 @@ func start(args []string) {
 	}
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 	go serverCore.StartServer(global.Ctx)
+	global.IsRun = true
 }
 
 // stop 停止服务端
 // 格式：stop
 func stop(args []string) {
 	global.Cancel()
+	global.IsRun = false
 }
 
 // generateCA 生成 CA 证书
@@ -357,4 +360,8 @@ func updMapping(args []string) {
 		fmt.Println("更新映射数据失败:", err)
 		return
 	}
+}
+
+func Heart(args []string) {
+	fmt.Println(global.Ring.Status(global.IsRun))
 }
