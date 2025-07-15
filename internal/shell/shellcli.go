@@ -99,6 +99,7 @@ func (s *Shell) Run() {
 			continue
 		case line == "help":
 			s.usage(rl.Stderr())
+			s.printHelpDoc()
 			continue
 		case line == "exit":
 			global.Cancel()
@@ -130,6 +131,81 @@ func (s *Shell) buildCompleter() *readline.PrefixCompleter {
 		items = append(items, readline.PcItem(name))
 	}
 	return readline.NewPrefixCompleter(items...)
+}
+
+// printHelpDoc 打印命令帮助文档
+func (s *Shell) printHelpDoc() {
+	type cmdHelp struct {
+		cmd         string
+		description string
+		usage       []string
+	}
+
+	helpDocs := []cmdHelp{
+		{
+			cmd:         "gen-ca",
+			description: "生成CA证书",
+			usage: []string{
+				"格式: gen-ca [有效期(年)] [-overwrite]",
+				"  有效期: 可选参数，指定CA证书的有效期，默认为10年",
+				"  -overwrite: 可选参数，强制覆盖已存在的证书",
+				"  示例: gen-ca 5 -overwrite  (生成有效期为5年的CA证书并覆盖已有证书)",
+			},
+		},
+		{
+			cmd:         "gen-certs",
+			description: "生成服务端和客户端证书",
+			usage: []string{
+				"格式: gen-certs [有效期(日)]",
+				"  有效期: 可选参数，指定证书的有效期(天)，默认为10天",
+				"  示例: gen-certs 30  (生成有效期为30天的证书)",
+			},
+		},
+		{
+			cmd:         "start",
+			description: "启动内网穿透服务器",
+			usage: []string{
+				"功能: 启动服务器，会检查证书是否存在",
+			},
+		},
+		{
+			cmd:         "stop",
+			description: "停止内网穿透服务器",
+			usage: []string{
+				"功能: 停止运行中的服务器",
+			},
+		},
+		{
+			cmd:         "mode",
+			description: "切换编辑模式",
+			usage: []string{
+				"格式: mode [vi|emacs]",
+				"  功能: 设置命令行编辑模式",
+				"  示例: mode vi  (切换到vi模式)",
+			},
+		},
+		{
+			cmd:         "help",
+			description: "显示此帮助信息",
+			usage:       []string{},
+		},
+		{
+			cmd:         "exit",
+			description: "退出程序",
+			usage: []string{
+				"功能: 停止服务并退出命令行界面",
+			},
+		},
+	}
+
+	fmt.Println("\n命令帮助文档:")
+	for _, doc := range helpDocs {
+		fmt.Printf("  %s - %s\n", doc.cmd, doc.description)
+		for _, line := range doc.usage {
+			fmt.Printf("    %s\n", line)
+		}
+		fmt.Println()
+	}
 }
 
 func (s *Shell) usage(w io.Writer) {
