@@ -176,6 +176,74 @@ func (s *Shell) printHelpDoc() {
 			},
 		},
 		{
+			cmd:         "show-config",
+			description: "显示服务端配置",
+			usage: []string{
+				"功能: 显示当前服务器IP、监听端口和邮箱配置",
+			},
+		},
+		{
+			cmd:         "show-mapping",
+			description: "显示所有端口映射",
+			usage: []string{
+				"功能: 显示所有配置的端口映射及其状态",
+			},
+		},
+		{
+			cmd:         "set-ip",
+			description: "设置服务端IP地址",
+			usage: []string{
+				"格式: set-ip <ip>",
+				"  功能: 设置服务端IP地址",
+				"  示例: set-ip 192.168.1.100",
+			},
+		},
+		{
+			cmd:         "set-port",
+			description: "设置服务端监听端口",
+			usage: []string{
+				"格式: set-port <port>",
+				"  功能: 设置服务端监听端口，范围为1-65535",
+				"  示例: set-port 9000",
+			},
+		},
+		{
+			cmd:         "set-email",
+			description: "设置服务端邮箱",
+			usage: []string{
+				"格式: set-email <email>",
+				"  功能: 设置服务端邮箱地址，用于接收通知",
+				"  示例: set-email admin@example.com",
+			},
+		},
+		{
+			cmd:         "add-mapping",
+			description: "添加端口映射",
+			usage: []string{
+				"格式: add-mapping <名称> <公网端口> <目标地址>",
+				"  功能: 添加一个新的端口映射配置",
+				"  示例: add-mapping web 8080 127.0.0.1:3000",
+			},
+		},
+		{
+			cmd:         "del-mapping",
+			description: "删除端口映射",
+			usage: []string{
+				"格式: del-mapping <名称>",
+				"  功能: 删除指定名称的端口映射",
+				"  示例: del-mapping web",
+			},
+		},
+		{
+			cmd:         "upd-mapping",
+			description: "更新端口映射",
+			usage: []string{
+				"格式: upd-mapping <名称> <公网端口> <目标地址> <状态>",
+				"  功能: 更新指定名称的端口映射配置",
+				"  示例: upd-mapping web 8080 127.0.0.1:3000 open",
+			},
+		},
+		{
 			cmd:         "mode",
 			description: "切换编辑模式",
 			usage: []string{
