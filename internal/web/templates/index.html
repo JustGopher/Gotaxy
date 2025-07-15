@@ -1,10 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .warning {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+        }
+
         /* 添加一些基本样式 */
         #config-section {
             max-width: 600px;
@@ -44,13 +85,24 @@
         }
     </style>
 </head>
+
 <body>
-<h1>Gotaxy</h1>
+    <h1>Gotaxy</h1>
 
-<div>
-<!-- 下载证书 -->
-
-</div>
+    <div>
+        <!-- 下载证书 -->
+        <p>请按照以下步骤操作：</p>
+        <ol>
+            <li>首先生成根证书(CA)</li>
+            <li>然后生成服务端和客户端证书</li>
+            <li>最后下载证书</li>
+        </ol>
+        <button id="generateCA">1. 生成根证书(CA)</button>
+        <button id="generateCerts">2. 生成服务端和客户端证书</button>
+        <button id="downloadCerts">3. 下载证书</button>
+        <div id="certMessage" class="message"></div>
+        <div id="certStatus" class="message warning" style="display: none;"></div>
+    </div>
 
 
 <div>
@@ -76,56 +128,164 @@
 </div>
 
 
-<div>
-<!-- 映射列表管理 -->
+    <div>
+        <!-- 映射列表管理 -->
 
-</div>
+    </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 获取配置数据
-        fetch('/getConf')
-            .then(response => response.json())
-            .then(data => {
-                // 填充表单数据
-                Object.keys(data).forEach(key => {
-                    if (document.getElementById(key)) {
-                        document.getElementById(key).value = data[key];
-                    }
-                });
-            });
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const generateCABtn = document.getElementById('generateCA');
+            const generateCertsBtn = document.getElementById('generateCerts');
+            const downloadCertsBtn = document.getElementById('downloadCerts');
+            const certMessage = document.getElementById('certMessage');
+            const certStatus = document.getElementById('certStatus');
 
-        // 表单提交事件
-        document.getElementById('config-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+            // 定期检查证书状态
+            function checkCertStatus() {
+                fetch('/api/cert-status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // 如果CA证书已更新，需要重新生成服务端和客户端证书
+                            if (data.data.needRegenerateCerts) {
+                                certStatus.textContent = '⚠️ CA证书已更新，请重新生成服务端和客户端证书';
+                                certStatus.className = 'message warning';
+                                certStatus.style.display = 'block';
+                                // 禁用下载按钮
+                                downloadCertsBtn.disabled = true;
+                            } else {
+                                certStatus.style.display = 'none';
+                                // 如果证书都已生成，启用下载按钮
+                                downloadCertsBtn.disabled = !(data.data.caExists && data.data.certsExist);
+                            }
 
-            const formData = new FormData(this);
-            const configData = {};
-
-            // 收集表单数据
-            for (const [key, value] of formData.entries()) {
-                configData[key] = value;
+                            // 根据CA证书是否存在，启用或禁用生成服务端和客户端证书按钮
+                            generateCertsBtn.disabled = !data.data.caExists;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('检查证书状态失败:', error);
+                    });
             }
 
-            // 发送更新请求
-            fetch('/updateConf', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(configData)
-            })
-                .then(response => response.text())
-                .then(message => {
-                    alert(message); // 显示成功消息
+            // 页面加载时检查一次证书状态
+            checkCertStatus();
+
+            // 每5秒检查一次证书状态
+            setInterval(checkCertStatus, 5000);
+
+            // 生成CA证书
+            generateCABtn.addEventListener('click', function () {
+                certMessage.textContent = '正在生成根证书...';
+                certMessage.className = 'message';
+
+                fetch('/api/generate-ca', {
+                    method: 'POST'
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('配置更新失败');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            certMessage.textContent = data.message;
+                            certMessage.className = 'message success';
+                            // 立即检查证书状态
+                            checkCertStatus();
+                        } else {
+                            certMessage.textContent = '生成失败: ' + data.message;
+                            certMessage.className = 'message error';
+                        }
+                    })
+                    .catch(error => {
+                        certMessage.textContent = '请求失败: ' + error.message;
+                        certMessage.className = 'message error';
+                    });
+            });
+
+            // 生成服务端和客户端证书
+            generateCertsBtn.addEventListener('click', function () {
+                certMessage.textContent = '正在生成服务端和客户端证书...';
+                certMessage.className = 'message';
+
+                fetch('/api/generate-certs', {
+                    method: 'POST'
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                throw new Error(text);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        certMessage.textContent = data.message;
+                        certMessage.className = 'message success';
+                        // 立即检查证书状态
+                        checkCertStatus();
+                    })
+                    .catch(error => {
+                        certMessage.textContent = '请求失败: ' + error.message;
+                        certMessage.className = 'message error';
+                    });
+            });
+
+            // 下载证书
+            downloadCertsBtn.addEventListener('click', function () {
+                // 如果按钮被禁用，不执行任何操作
+                if (this.disabled) {
+                    return;
+                }
+
+                // 直接触发下载，错误会在后端处理
+                window.location.href = '/api/download-certs';
+            });
         });
-    });
-</script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取配置数据
+            fetch('/getConf')
+                .then(response => response.json())
+                .then(data => {
+                    // 填充表单数据
+                    Object.keys(data).forEach(key => {
+                        if (document.getElementById(key)) {
+                            document.getElementById(key).value = data[key];
+                        }
+                    });
+                });
+
+            // 表单提交事件
+            document.getElementById('config-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const configData = {};
+
+                // 收集表单数据
+                for (const [key, value] of formData.entries()) {
+                    configData[key] = value;
+                }
+
+                // 发送更新请求
+                fetch('/updateConf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                })
+                    .then(response => response.text())
+                    .then(message => {
+                        alert(message); // 显示成功消息
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('配置更新失败');
+                    });
+            });
+        });
+    </script>
 
 </body>
+
 </html>

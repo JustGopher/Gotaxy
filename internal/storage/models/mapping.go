@@ -70,7 +70,10 @@ func DeleteMapByName(db *sql.DB, name string) error {
 	}
 
 	_, err := db.Exec("delete from mapping where name =?", name)
-	return fmt.Errorf("DeleteMapByName() 删除映射失败: %v", err)
+	if err != nil {
+		return fmt.Errorf("DeleteMapByName() 删除映射失败: %v", err)
+	}
+	return nil
 }
 
 // UpdateMap 更新映射
