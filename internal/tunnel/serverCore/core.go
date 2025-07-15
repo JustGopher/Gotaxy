@@ -50,7 +50,7 @@ func StartServer(ctx context.Context) {
 	// 主动关闭当前会话
 	// 从 atomic.Value 中取出当前活跃的 session, 调用 session.Close() 主动关闭连接，防止资源泄露, 这会通知所有基于此会话创建的 stream 关闭。
 	if val := currentSession.Load(); val != nil {
-		session := val.(*smux.Session)
+		session, _ := val.(*smux.Session)
 		_ = session.Close()
 	}
 }
@@ -234,7 +234,11 @@ func startHeartbeat(session *smux.Session, interval time.Duration, ring *heart.H
 			}
 
 			buffer := make([]byte, 4)
-			stream.SetReadDeadline(time.Now().Add(5 * time.Second))
+			err = stream.SetReadDeadline(time.Now().Add(5 * time.Second))
+			if err != nil {
+				global.Log.Error("heartbeat(): SetReadDeadline失败:", err)
+				return
+			}
 			_, err = io.ReadFull(stream, buffer)
 			if err != nil || string(buffer) != "PONG" {
 				global.Log.Error("heartbeat: 读失败:", err)

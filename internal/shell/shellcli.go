@@ -134,6 +134,7 @@ func (s *Shell) buildCompleter() *readline.PrefixCompleter {
 }
 
 // printHelpDoc 打印命令帮助文档
+// nolint:funlen
 func (s *Shell) printHelpDoc() {
 	type cmdHelp struct {
 		cmd         string
