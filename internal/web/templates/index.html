@@ -46,42 +46,75 @@
             color: #8a6d3b;
         }
 
-        /* 添加一些基本样式 */
-        #config-section {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        input[type="email"] {
+        /* 模态框背景 */
+        .modal {
+            display: none; /* 默认隐藏 */
+            position: fixed; /* 固定定位 */
+            z-index: 1;
+            left: 0;
+            top: 0;
             width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            height: 100%;
+            overflow: auto; /* 允许滚动 */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
         }
 
-        button {
+        /* 模态框内容 */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 400px; /* 调整为固定宽度 */
+            border-radius: 8px; /* 添加圆角 */
+        }
+
+        /* 关闭按钮 */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        /* 配置项显示 */
+        .config-items {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-items span {
+            margin-right: 10px;
+        }
+
+        /* 弹窗内的表单元素 */
+        .modal-content .form-group input {
+            width: 100%; /* 确保输入框宽度为100% */
+            box-sizing: border-box; /* 包含内边距和边框在宽度内 */
+        }
+
+        /* 弹窗内的按钮样式 */
+        .modal-content button {
+            width: 100%; /* 确保按钮宽度为100% */
             background-color: #4CAF50;
             color: white;
-            padding: 10px 20px;
             border: none;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
+        }
+
+        .modal-content button:hover {
+            background-color: #45a049;
         }
 
         /* 映射表格样式 */
@@ -195,22 +228,38 @@
         <!-- 查看和修改配置 -->
         <div id="config-section">
             <h2>配置管理</h2>
-            <form id="config-form">
-                <div class="form-group">
-                    <label for="server_ip">服务器IP:</label>
-                    <input type="text" id="server_ip" name="server_ip" value="{{.server_ip}}">
+            <div class="config-items">
+                <span>服务器IP:</span>
+                <span id="display-server_ip">{{.server_ip}}</span>
+                <span>监听端口:</span>
+                <span id="display-listen_port">{{.listen_port}}</span>
+                <span>邮箱:</span>
+                <span id="display-email">{{.email}}</span>
+                <button id="editConfigBtn">修改配置</button>
+            </div>
+
+            <!-- 配置管理弹窗 -->
+            <div id="config-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>配置管理</h2>
+                    <form id="config-form">
+                        <div class="form-group">
+                            <label for="server_ip">服务器IP:</label>
+                            <input type="text" id="server_ip" name="server_ip" value="{{.server_ip}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="listen_port">监听端口:</label>
+                            <input type="number" id="listen_port" name="listen_port" value="{{.listen_port}}" min="1" max="65535">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">邮箱:</label>
+                            <input type="email" id="email" name="email" value="{{.email}}">
+                        </div>
+                        <button type="submit">保存配置</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="listen_port">监听端口:</label>
-                    <input type="number" id="listen_port" name="listen_port" value="{{.listen_port}}" min="1"
-                        max="65535">
-                </div>
-                <div class="form-group">
-                    <label for="email">邮箱:</label>
-                    <input type="email" id="email" name="email" value="{{.email}}">
-                </div>
-                <button type="submit">保存配置</button>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -556,21 +605,40 @@
             loadMappings();
         });
 
-        document.addEventListener('DOMContentLoaded', function () {
-            // 获取配置数据
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取配置数据并填充显示区域
             fetch('/getConf')
                 .then(response => response.json())
                 .then(data => {
-                    // 填充表单数据
-                    Object.keys(data).forEach(key => {
-                        if (document.getElementById(key)) {
-                            document.getElementById(key).value = data[key];
-                        }
-                    });
+                    document.getElementById('display-server_ip').textContent = data.server_ip;
+                    document.getElementById('display-listen_port').textContent = data.listen_port;
+                    document.getElementById('display-email').textContent = data.email;
                 });
 
+            // 修改配置按钮点击事件
+            document.getElementById('editConfigBtn').addEventListener('click', function() {
+                // 显示模态框
+                document.getElementById('config-modal').style.display = 'block';
+
+                // 填充表单数据
+                fetch('/getConf')
+                    .then(response => response.json())
+                    .then(data => {
+                        Object.keys(data).forEach(key => {
+                            if (document.getElementById(key)) {
+                                document.getElementById(key).value = data[key];
+                            }
+                        });
+                    });
+            });
+
+            // 关闭按钮点击事件
+            document.querySelector('.close').addEventListener('click', function() {
+                document.getElementById('config-modal').style.display = 'none';
+            });
+
             // 表单提交事件
-            document.getElementById('config-form').addEventListener('submit', function (e) {
+            document.getElementById('config-form').addEventListener('submit', function(e) {
                 e.preventDefault();
 
                 const formData = new FormData(this);
@@ -592,12 +660,26 @@
                     .then(response => response.text())
                     .then(message => {
                         alert(message); // 显示成功消息
+                        // 更新显示区域
+                        document.getElementById('display-server_ip').textContent = configData.server_ip;
+                        document.getElementById('display-listen_port').textContent = configData.listen_port;
+                        document.getElementById('display-email').textContent = configData.email;
+                        // 关闭模态框
+                        document.getElementById('config-modal').style.display = 'none';
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         alert('配置更新失败');
                     });
             });
+
+            // 点击模态框外区域关闭模态框
+            window.onclick = function(event) {
+                var modal = document.getElementById('config-modal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            }
         });
     </script>
 
