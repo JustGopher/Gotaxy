@@ -11,7 +11,7 @@ type Mapping struct {
 	Name       string `json:"name"`
 	PublicPort string `json:"public_port"`
 	TargetAddr string `json:"target_addr"`
-	Status     string `json:"status"`
+	Enable     string `json:"enable"`
 }
 
 // CreateMpgStructure 创建映射表结构
@@ -21,7 +21,7 @@ func CreateMpgStructure(db *sql.DB) error {
     name varchar(255) not null unique,
     public_port varchar(255) not null,
     target_addr varchar(255) not null,
-    status varchar(255) not null
+    enable varchar(255) not null
     );`
 
 	_, err := db.Exec(sqlMap)
@@ -33,8 +33,8 @@ func CreateMpgStructure(db *sql.DB) error {
 
 // InsertMpg 插入映射数据
 func InsertMpg(db *sql.DB, m Mapping) error {
-	_, err := db.Exec("insert into mapping (name, public_port, target_addr, status) values (?,?,?,?)",
-		m.Name, m.PublicPort, m.TargetAddr, m.Status)
+	_, err := db.Exec("insert into mapping (name, public_port, target_addr, enable) values (?,?,?,?)",
+		m.Name, m.PublicPort, m.TargetAddr, m.Enable)
 	if err != nil {
 		return fmt.Errorf("插入映射数据失败: %v", err)
 	}
@@ -54,7 +54,7 @@ func GetAllMpg(db *sql.DB) ([]Mapping, error) {
 	var mappingSli []Mapping
 	for rows.Next() {
 		var m Mapping
-		err := rows.Scan(&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
+		err := rows.Scan(&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Enable)
 		if err != nil {
 			return nil, fmt.Errorf("GetAllMpg() 解析映射数据失败: %v", err)
 		}
@@ -77,16 +77,17 @@ func DeleteMapByName(db *sql.DB, name string) error {
 }
 
 // UpdateMap 更新映射
-func UpdateMap(db *sql.DB, name string, key string, value string) (*Mapping, error) {
+func UpdateMap(db *sql.DB, name string, port string, addr string, enable string) (*Mapping, error) {
 	var m Mapping
 
-	_, err := db.Exec("update mapping set public_port = ?, target_addr = ? where name = ?", key, value, name)
+	_, err := db.Exec("update mapping set public_port = ?, target_addr = ?, enable = ? where name = ?",
+		port, addr, enable, name)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateMap() 更新映射失败: %v", err)
 	}
 
 	err = db.QueryRow("select * from mapping where name =?", name).Scan(
-		&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Status)
+		&m.ID, &m.Name, &m.PublicPort, &m.TargetAddr, &m.Enable)
 	if err != nil {
 		return nil, fmt.Errorf("UpdateMap() 查询映射失败: %v", err)
 	}
