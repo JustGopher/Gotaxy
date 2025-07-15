@@ -15,10 +15,10 @@ import (
 )
 
 // Start 启动
-func Start(serverAddr string) {
+func Start(serverAddr, certFile, keyFile, caFile string) {
 	go HelloServe()
 
-	tlsCfg, err := LoadClientTLSConfig("certs/client.crt", "certs/client.key", "certs/ca.crt")
+	tlsCfg, err := LoadClientTLSConfig(certFile, keyFile, caFile)
 	if err != nil {
 		log.Fatalf("加载 TLS 配置失败: %v", err)
 	}
