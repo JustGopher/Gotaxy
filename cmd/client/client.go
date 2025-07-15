@@ -8,8 +8,15 @@ import (
 )
 
 func main() {
-	flag := make(map[string]string)
-	// 检查是否有--help参数
+	// 预设默认值
+	flag := map[string]string{
+		"-h":   "127.0.0.1",
+		"-p":   "9000",
+		"-ca":  "certs/ca.crt",
+		"-crt": "certs/client.crt",
+		"-key": "certs/client.key",
+	}
+
 	for i, arg := range os.Args {
 		switch arg {
 		case "--help", "-help":
