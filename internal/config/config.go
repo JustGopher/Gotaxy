@@ -52,6 +52,10 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 		return
 	}
 	for _, v := range mpg {
-		pool.Set(v.Name, v.PublicPort, v.TargetAddr)
+		if v.Enable == "open" {
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, true)
+		} else {
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, false)
+		}
 	}
 }

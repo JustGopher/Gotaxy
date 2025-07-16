@@ -114,7 +114,7 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 添加到连接池
-	global.ConnPool.Set(name, strconv.Itoa(mapping.PublicPort), mapping.TargetAddr)
+	global.ConnPool.Set(name, strconv.Itoa(mapping.PublicPort), mapping.TargetAddr, false)
 
 	// 返回成功响应
 	w.Header().Set("Content-Type", "application/json")
@@ -159,7 +159,7 @@ func delMappingHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 获取映射名称和端口
 	name := poolMappings[id-1].Name
-	port := poolMappings[id-1].PublicPort
+	//port := poolMappings[id-1].PublicPort
 
 	// 从数据库删除映射
 	err = models.DeleteMapByName(global.DB, name)
@@ -170,7 +170,7 @@ func delMappingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 从连接池删除映射
-	global.ConnPool.Delete(port)
+	global.ConnPool.Delete(name)
 
 	// 返回成功响应
 	w.Header().Set("Content-Type", "application/json")
