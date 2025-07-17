@@ -3,9 +3,10 @@ package pool
 import (
 	"context"
 	"errors"
-	"github.com/xtaci/smux"
 	"sync"
 	"sync/atomic"
+
+	"github.com/xtaci/smux"
 )
 
 /**

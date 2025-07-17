@@ -50,7 +50,7 @@ func OpenMapping(args []string) {
 	}
 	name := args[0]
 
-	if global.IsRun == false {
+	if !global.IsRun {
 		ok := global.ConnPool.UpdateEnable(name, true)
 		if !ok {
 			fmt.Printf("规则 '%s' 不存在\n", name)
@@ -58,7 +58,7 @@ func OpenMapping(args []string) {
 		}
 		mapping := global.ConnPool.GetMapping(name)
 		var enable string
-		if mapping.Enable == true {
+		if mapping.Enable {
 			enable = "open"
 		} else {
 			enable = "close"
@@ -102,7 +102,7 @@ func CloseMapping(args []string) {
 // start 启动服务端
 // 格式：start
 func start(args []string) {
-	if global.IsRun == true {
+	if global.IsRun {
 		fmt.Println("服务已启动")
 		return
 	}
@@ -119,7 +119,7 @@ func start(args []string) {
 // stop 停止服务端
 // 格式：stop
 func stop(args []string) {
-	if global.IsRun == false {
+	if !global.IsRun {
 		fmt.Println("服务未启动")
 		return
 	}
