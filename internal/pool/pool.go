@@ -19,6 +19,7 @@ type Mapping struct {
 	TargetAddr string             // 映射目标地址，例如 "127.0.0.1:8080"
 	Ctx        context.Context    // 上下文，用于关闭连接
 	CtxCancel  context.CancelFunc // 上下文取消函数，用于关闭连接
+	Traffic    int64              // 流量统计
 	Status     string             // 连接状态，例如 "active", "inactive"
 	Enable     bool               // 是否启用，例如 true, false
 }

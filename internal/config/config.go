@@ -10,10 +10,11 @@ import (
 
 // Config 配置
 type Config struct {
-	Name       string `json:"name"`
-	ServerIP   string `json:"server_ip"`
-	ListenPort string `json:"listen_port"`
-	Email      string `json:"email"`
+	Name         string `json:"name"`
+	ServerIP     string `json:"server_ip"`
+	ListenPort   string `json:"listen_port"`
+	Email        string `json:"email"`
+	TotalTraffic int64  `json:"total_traffic"` // 总流量
 }
 
 // ConfigLoad 配置加载
