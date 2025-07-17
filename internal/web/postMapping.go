@@ -15,8 +15,9 @@ type Mapping struct {
 	Name       string `json:"name"`
 	PublicPort int    `json:"publicPort"`
 	TargetAddr string `json:"targetAddr"`
-	Enable     string `json:"enable"`
+	Enable     bool   `json:"enable"`
 	Status     string `json:"status"` // 连接状态，从连接池获取
+	Traffic    int64  `json:"traffic"`
 }
 
 // mappingsHandler 获取所有映射列表
@@ -35,9 +36,9 @@ func mappingsHandler(w http.ResponseWriter, r *http.Request) {
 		port, _ := strconv.Atoi(m.PublicPort)
 
 		// 处理状态显示
-		enable := "stopped"
+		enable := true
 		if m.Enable {
-			enable = "running"
+			enable = false
 		}
 
 		result = append(result, Mapping{
@@ -95,9 +96,9 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 处理Enable字段
-	dbEnable := "close"
-	if mapping.Enable == "running" {
-		dbEnable = "open"
+	dbEnable := false
+	if mapping.Enable == true {
+		dbEnable = true
 	}
 
 	// 保存到数据库
@@ -114,7 +115,7 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 添加到连接池
-	global.ConnPool.Set(name, strconv.Itoa(mapping.PublicPort), mapping.TargetAddr, false)
+	global.ConnPool.Set(name, strconv.Itoa(mapping.PublicPort), mapping.TargetAddr, false, mapping.Traffic)
 
 	// 返回成功响应
 	w.Header().Set("Content-Type", "application/json")
@@ -192,8 +193,8 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 
 	// 解析请求体
 	var request struct {
-		ID     int    `json:"id"`
-		Enable string `json:"enable"` // "running" 或 "stopped"
+		ID     int  `json:"id"`
+		Enable bool `json:"enable"` // "running" 或 "stopped"
 	}
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -208,7 +209,7 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.Enable != "running" && request.Enable != "stopped" {
+	if request.Enable != true && request.Enable != false {
 		http.Error(w, "Enable必须为'running'或'stopped'", http.StatusBadRequest)
 		return
 	}
@@ -226,10 +227,10 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 	name := poolMappings[request.ID-1].Name
 
 	// 转换Enable值
-	dbEnable := "close"
+	dbEnable := false
 	poolEnable := false
-	if request.Enable == "running" {
-		dbEnable = "open"
+	if request.Enable == true {
+		dbEnable = true
 		poolEnable = true
 	}
 

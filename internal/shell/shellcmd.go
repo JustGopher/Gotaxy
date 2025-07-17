@@ -32,9 +32,9 @@ func RegisterCMD(sh *Shell) {
 	sh.Register("add-mapping", AddMapping)
 	sh.Register("del-mapping", DelMapping)
 	sh.Register("upd-mapping", UpdMapping)
-	sh.Register("heart", Heart)
 	sh.Register("open-mapping", OpenMapping)
 	sh.Register("close-mapping", CloseMapping)
+	sh.Register("heart", Heart)
 }
 
 // OpenMapping 打开映射
@@ -251,10 +251,10 @@ func showConfig(args []string) {
 func showMapping(args []string) {
 	mpg := global.ConnPool.All()
 
-	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus\t\tEnable")
+	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus\t\tEnable\t\tTraffic")
 
 	for _, v := range mpg {
-		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Status, "\t", v.Enable)
+		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Status, "\t", v.Enable, "\t\t", v.Traffic)
 	}
 }
 
@@ -371,14 +371,14 @@ func AddMapping(args []string) {
 		Name:       args[0],
 		PublicPort: args[1],
 		TargetAddr: args[2],
-		Enable:     "close",
+		Enable:     false,
 	})
 	if err != nil {
 		global.ErrorLog.Printf("addMapping() 插入映射数据失败: %v", err)
 		fmt.Println("插入映射数据失败:", err)
 		return
 	}
-	global.ConnPool.Set(args[0], args[1], args[2], false)
+	global.ConnPool.Set(args[0], args[1], args[2], false, 0)
 }
 
 // DelMapping 删除映射
@@ -414,15 +414,20 @@ func DelMapping(args []string) {
 }
 
 // UpdMapping 更新映射
-// 格式：upd-mapping <name> <port> <addr>
+// 格式：upd-mapping <name> <port> <addr> <enable>
 func UpdMapping(args []string) {
 	if len(args) != 4 {
-		fmt.Printf("无效的参数 '%s'，正确格式为：upd-mapping <name> <port> <addr>\n", args)
+		fmt.Printf("无效的参数 '%s'，正确格式为：upd-mapping <name> <port> <addr> <enable>\n", args)
 		return
 	}
 
 	if args[0] == "" {
 		fmt.Println(" name 不能为空！")
+		return
+	}
+
+	if global.ConnPool.GetMapping(args[0]).Enable != false {
+		fmt.Println("当前映射正在运行中，无法更新，请关闭后重试")
 		return
 	}
 
