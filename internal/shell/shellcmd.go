@@ -57,13 +57,8 @@ func OpenMapping(args []string) {
 			return
 		}
 		mapping := global.ConnPool.GetMapping(name)
-		var enable string
-		if mapping.Enable {
-			enable = "open"
-		} else {
-			enable = "close"
-		}
-		updateMap, err := models.UpdateMap(global.DB, mapping.Name, mapping.PublicPort, mapping.TargetAddr, enable)
+
+		updateMap, err := models.UpdateMap(global.DB, mapping.Name, mapping.PublicPort, mapping.TargetAddr, mapping.Enable, mapping.RateLimit)
 		if err != nil {
 			global.ErrorLog.Println("OpenMapping() 修改规则失败", err)
 			return
@@ -251,10 +246,10 @@ func showConfig(args []string) {
 func showMapping(args []string) {
 	mpg := global.ConnPool.All()
 
-	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus\t\tEnable\t\tTraffic")
+	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus\t\tEnable\t\tTraffic\t\tRateLimit")
 
 	for _, v := range mpg {
-		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Status, "\t", v.Enable, "\t\t", v.Traffic)
+		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Status, "\t", v.Enable, "\t\t", v.Traffic, "\t\t", v.RateLimit)
 	}
 }
 
@@ -372,13 +367,15 @@ func AddMapping(args []string) {
 		PublicPort: args[1],
 		TargetAddr: args[2],
 		Enable:     false,
+		Traffic:    0,
+		RateLimit:  2048,
 	})
 	if err != nil {
 		global.ErrorLog.Printf("addMapping() 插入映射数据失败: %v", err)
 		fmt.Println("插入映射数据失败:", err)
 		return
 	}
-	global.ConnPool.Set(args[0], args[1], args[2], false, 0)
+	global.ConnPool.Set(args[0], args[1], args[2], false, 0, 2048)
 }
 
 // DelMapping 删除映射
@@ -414,10 +411,10 @@ func DelMapping(args []string) {
 }
 
 // UpdMapping 更新映射
-// 格式：upd-mapping <name> <port> <addr> <enable>
+// 格式：upd-mapping <name> <port> <addr> <rate_limit>
 func UpdMapping(args []string) {
 	if len(args) != 4 {
-		fmt.Printf("无效的参数 '%s'，正确格式为：upd-mapping <name> <port> <addr> <enable>\n", args)
+		fmt.Printf("无效的参数 '%s'，正确格式为：upd-mapping <name> <port> <addr> <rate_limit>\n", args)
 		return
 	}
 
@@ -426,7 +423,7 @@ func UpdMapping(args []string) {
 		return
 	}
 
-	if global.ConnPool.GetMapping(args[0]).Enable {
+	if global.ConnPool.GetMapping(args[0]).Status == "active" {
 		fmt.Println("当前映射正在运行中，无法更新，请关闭后重试")
 		return
 	}
@@ -442,12 +439,22 @@ func UpdMapping(args []string) {
 		return
 	}
 
-	_, err = models.UpdateMap(global.DB, args[0], args[1], args[2], args[3])
+	retaLimit, err := strconv.Atoi(args[3])
+	if err != nil {
+		fmt.Printf("无效的参数 '%s'，参数必须是数字！\n", args)
+		return
+	}
+
+	enable := global.ConnPool.GetMapping(args[0]).Enable
+
+	_, err = models.UpdateMap(global.DB, args[0], args[1], args[2], enable, int64(retaLimit))
 	if err != nil {
 		global.ErrorLog.Printf("updMapping() 更新映射数据失败: %v", err)
 		fmt.Println("更新映射数据失败:", err)
 		return
 	}
+
+	global.ConnPool.UpdateRateLimit(args[0], int64(retaLimit))
 }
 
 func Heart(args []string) {

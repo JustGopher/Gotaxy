@@ -65,9 +65,9 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 	}
 	for _, v := range mpg {
 		if v.Enable {
-			pool.Set(v.Name, v.PublicPort, v.TargetAddr, true, v.Traffic)
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, true, v.Traffic, v.RateLimit)
 		} else {
-			pool.Set(v.Name, v.PublicPort, v.TargetAddr, false, v.Traffic)
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, false, v.Traffic, v.RateLimit)
 		}
 	}
 }
