@@ -10,10 +10,11 @@ import (
 
 // Config 配置
 type Config struct {
-	Name       string `json:"name"`
-	ServerIP   string `json:"server_ip"`
-	ListenPort string `json:"listen_port"`
-	Email      string `json:"email"`
+	Name         string `json:"name"`
+	ServerIP     string `json:"server_ip"`
+	ListenPort   string `json:"listen_port"`
+	Email        string `json:"email"`
+	TotalTraffic int64  `json:"total_traffic"` // 总流量
 }
 
 // ConfigLoad 配置加载
@@ -52,6 +53,10 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 		return
 	}
 	for _, v := range mpg {
-		pool.Set(v.Name, v.PublicPort, v.TargetAddr)
+		if v.Enable == "open" {
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, true)
+		} else {
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, false)
+		}
 	}
 }

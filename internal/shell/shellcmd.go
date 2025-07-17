@@ -3,6 +3,7 @@ package shell
 import (
 	"context"
 	"fmt"
+	"github/JustGopher/Gotaxy/internal/tunnel/proxy"
 	"log"
 	"strconv"
 
@@ -31,11 +32,81 @@ func RegisterCMD(sh *Shell) {
 	sh.Register("add-mapping", AddMapping)
 	sh.Register("del-mapping", DelMapping)
 	sh.Register("upd-mapping", UpdMapping)
+	sh.Register("heart", Heart)
+	sh.Register("open-mapping", OpenMapping)
+	sh.Register("close-mapping", CloseMapping)
+}
+
+// OpenMapping 打开映射
+// 格式：open-mapping [映射名称]
+func OpenMapping(args []string) {
+	/**
+	1. 如果服务已启动，检查是否关闭，若未关闭，启动这个映射
+	2. 如果服务未启动，仅仅变动是否打开设置
+	*/
+	if len(args) != 1 {
+		fmt.Printf("无效的参数 '%s'，正确格式为：open-mapping [映射名称]\n", args)
+		return
+	}
+	name := args[0]
+
+	if !global.IsRun {
+		ok := global.ConnPool.UpdateEnable(name, true)
+		if !ok {
+			fmt.Printf("规则 '%s' 不存在\n", name)
+			return
+		}
+		mapping := global.ConnPool.GetMapping(name)
+		var enable string
+		if mapping.Enable {
+			enable = "open"
+		} else {
+			enable = "close"
+		}
+		updateMap, err := models.UpdateMap(global.DB, mapping.Name, mapping.PublicPort, mapping.TargetAddr, enable)
+		if err != nil {
+			global.Log.Error("OpenMapping() 修改规则失败", err)
+			return
+		}
+		global.Log.Info("OpenMapping() 修改 '%s' 成功", updateMap.Name)
+	} else {
+		// 启动映射
+		ok := global.ConnPool.UpdateEnable(name, true)
+		if !ok {
+			fmt.Printf("规则 '%s' 不存在\n", name)
+			return
+		}
+		mapping := global.ConnPool.GetMapping(name)
+		// 启动映射
+		mapping.Ctx, mapping.CtxCancel = context.WithCancel(context.Background())
+		go proxy.StartPublicListener(global.Ctx, mapping)
+	}
+}
+
+// CloseMapping 关闭映射
+// 格式：close-mapping [映射名称]
+func CloseMapping(args []string) {
+	if len(args) != 1 {
+		fmt.Printf("无效的参数 '%s'，正确格式为：close-mapping [映射名称]\n", args)
+		return
+	}
+	name := args[0]
+	err := global.ConnPool.Close(name)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	global.ConnPool.UpdateEnable(name, false)
+	fmt.Printf("关闭 '%s' 成功", name)
 }
 
 // start 启动服务端
 // 格式：start
 func start(args []string) {
+	if global.IsRun {
+		fmt.Println("服务已启动")
+		return
+	}
 	// 检查证书是否存在
 	if !tlsgen.CheckServerCertExist("certs") {
 		fmt.Println("证书缺失，请先生成证书")
@@ -43,12 +114,18 @@ func start(args []string) {
 	}
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 	go serverCore.StartServer(global.Ctx)
+	global.IsRun = true
 }
 
 // stop 停止服务端
 // 格式：stop
 func stop(args []string) {
+	if !global.IsRun {
+		fmt.Println("服务未启动")
+		return
+	}
 	global.Cancel()
+	global.IsRun = false
 }
 
 // generateCA 生成 CA 证书
@@ -172,15 +249,12 @@ func showConfig(args []string) {
 // showMapping 显示映射
 // 格式：show-mapping
 func showMapping(args []string) {
-	mpg, err := models.GetAllMpg(global.DB)
-	if err != nil {
-		return
-	}
+	mpg := global.ConnPool.All()
 
-	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus")
+	fmt.Println("Name\tPublicPort\tTargetAddr\t\tStatus\t\tEnable")
 
 	for _, v := range mpg {
-		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Enable)
+		fmt.Println(v.Name, "\t", v.PublicPort, "\t\t", v.TargetAddr, "\t", v.Status, "\t", v.Enable)
 	}
 }
 
@@ -304,7 +378,7 @@ func AddMapping(args []string) {
 		fmt.Println("插入映射数据失败:", err)
 		return
 	}
-	global.ConnPool.Set(args[0], args[1], args[2])
+	global.ConnPool.Set(args[0], args[1], args[2], false)
 }
 
 // DelMapping 删除映射
@@ -318,6 +392,18 @@ func DelMapping(args []string) {
 		fmt.Println("参数缺失!，正确格式为：del-mapping <name>")
 		return
 	}
+	mpg := global.ConnPool.GetMapping(args[0])
+	if mpg == nil {
+		fmt.Println("映射不存在，请检查name是否正确")
+		return
+	}
+
+	if mpg.Status == "active" {
+		fmt.Println("当前映射正在运行中，无法删除，请关闭后重试")
+		return
+	}
+
+	global.ConnPool.Delete(mpg.Name)
 
 	err := models.DeleteMapByName(global.DB, args[0])
 	if err != nil {
@@ -357,4 +443,8 @@ func UpdMapping(args []string) {
 		fmt.Println("更新映射数据失败:", err)
 		return
 	}
+}
+
+func Heart(args []string) {
+	fmt.Println(global.Ring.Status(global.IsRun))
 }

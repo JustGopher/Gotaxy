@@ -37,7 +37,7 @@ func main() {
 	}
 
 	serverAddr := flag["-h"] + ":" + flag["-p"]
-	clientCore.Start(serverAddr, flag["-ca"], flag["-crt"], flag["-key"])
+	clientCore.Start(serverAddr, flag["-crt"], flag["-key"], flag["-ca"])
 }
 
 // 显示帮助信息
