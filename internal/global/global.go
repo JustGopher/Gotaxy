@@ -14,8 +14,8 @@ var (
 	Ctx      context.Context
 	Cancel   context.CancelFunc
 	ConnPool *pool.Pool
-	InfoLog   *log.Logger
-	ErrorLog  *log.Logger
+	InfoLog  *log.Logger
+	ErrorLog *log.Logger
 	DB       *sql.DB
 	Config   config.Config
 	Ring     *heart.HeartbeatRing

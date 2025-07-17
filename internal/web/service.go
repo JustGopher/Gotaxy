@@ -15,8 +15,8 @@ func StatusService(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
-		"data": map[string]int{
-			"isRunning": global.IsRunning,
+		"data": map[string]bool{
+			"isRunning": global.IsRun,
 		},
 	})
 }
@@ -24,7 +24,7 @@ func StatusService(w http.ResponseWriter, r *http.Request) {
 // StartService 启动服务
 func StartService(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if global.IsRunning == 1 {
+	if global.IsRun {
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"status":  "error",
 			"message": "服务已启动",
@@ -44,7 +44,7 @@ func StartService(w http.ResponseWriter, r *http.Request) {
 	// 开启服务
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 	go serverCore.StartServer(global.Ctx)
-	global.IsRunning = 1
+	global.IsRun = true
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
 		"data":   nil,
@@ -54,7 +54,7 @@ func StartService(w http.ResponseWriter, r *http.Request) {
 // StopService 停止服务
 func StopService(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if global.IsRunning == 0 {
+	if !global.IsRun {
 		_ = json.NewEncoder(w).Encode(map[string]string{
 			"status":  "error",
 			"message": "服务已停止",
@@ -63,7 +63,7 @@ func StopService(w http.ResponseWriter, r *http.Request) {
 	}
 	// 停止服务
 	global.Cancel()
-	global.IsRunning = 0
+	global.IsRun = false
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
 		"data":   nil,

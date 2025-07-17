@@ -20,7 +20,7 @@ import (
 func StartServer(ctx context.Context) {
 	connPool := global.ConnPool
 	if connPool == nil {
-		global.Log.Info("StartServer() 连接池未初始化")
+		global.ErrorLog.Println("StartServer() 连接池未初始化")
 		panic("StartServer() 连接池未初始化")
 	}
 	// 开启控制端口监听
@@ -131,7 +131,7 @@ func startHeartbeat(session *smux.Session, interval time.Duration, ring *heart.H
 
 			stream, err := session.OpenStream()
 			if err != nil {
-				global.Log.Error("heartbeat: OpenStream失败:", err)
+				global.ErrorLog.Println("heartbeat: OpenStream失败:", err)
 				ring.Add(false, 0)
 				continue
 			}
@@ -139,7 +139,7 @@ func startHeartbeat(session *smux.Session, interval time.Duration, ring *heart.H
 			start := time.Now()
 			_, err = stream.Write([]byte("HEARTBEAT\nPING\n"))
 			if err != nil {
-				global.Log.Warn("heartbeat: 写入失败:", err)
+				global.ErrorLog.Println("heartbeat: 写入失败:", err)
 				ring.Add(false, 0)
 				_ = stream.Close()
 				continue
@@ -148,12 +148,12 @@ func startHeartbeat(session *smux.Session, interval time.Duration, ring *heart.H
 			buffer := make([]byte, 4)
 			err = stream.SetReadDeadline(time.Now().Add(5 * time.Second))
 			if err != nil {
-				global.Log.Error("heartbeat(): SetReadDeadline失败:", err)
+				global.ErrorLog.Println("heartbeat(): SetReadDeadline失败:", err)
 				return
 			}
 			_, err = io.ReadFull(stream, buffer)
 			if err != nil || string(buffer) != "PONG" {
-				global.Log.Error("heartbeat: 读失败:", err)
+				global.ErrorLog.Println("heartbeat: 读失败:", err)
 				ring.Add(false, 0)
 				_ = stream.Close()
 				continue
@@ -161,7 +161,7 @@ func startHeartbeat(session *smux.Session, interval time.Duration, ring *heart.H
 
 			delay := time.Since(start)
 			ring.Add(true, delay)
-			global.Log.Info("收到pong,delay:", delay)
+			global.ErrorLog.Println("收到pong,delay:", delay)
 			_ = stream.Close()
 
 			time.Sleep(interval)

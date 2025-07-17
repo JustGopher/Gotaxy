@@ -704,7 +704,7 @@
                 .then(data => {
                     if (data.status === 'success') {
                         const isRunning = data.data.isRunning;
-                        if (isRunning === 1) {
+                        if (isRunning === true) {
                             serviceStatus.innerHTML = '<span class="status-running">服务已启动</span>';
                             startServiceBtn.disabled = true;
                             stopServiceBtn.disabled = false;

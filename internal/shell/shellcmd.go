@@ -65,10 +65,10 @@ func OpenMapping(args []string) {
 		}
 		updateMap, err := models.UpdateMap(global.DB, mapping.Name, mapping.PublicPort, mapping.TargetAddr, enable)
 		if err != nil {
-			global.Log.Error("OpenMapping() 修改规则失败", err)
+			global.ErrorLog.Println("OpenMapping() 修改规则失败", err)
 			return
 		}
-		global.Log.Info("OpenMapping() 修改 '%s' 成功", updateMap.Name)
+		global.ErrorLog.Printf("OpenMapping() 修改 '%s' 成功", updateMap.Name)
 	} else {
 		// 启动映射
 		ok := global.ConnPool.UpdateEnable(name, true)

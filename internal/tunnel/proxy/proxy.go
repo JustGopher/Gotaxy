@@ -36,12 +36,12 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 		// 监听端口关闭
 		select {
 		case <-ctx.Done():
-			global.Log.Info("关闭端口监听 :", pubPort)
+			global.InfoLog.Println("关闭端口监听 :", pubPort)
 			fmt.Printf("关闭端口监听 :%s", pubPort)
 			_ = listener.Close()
 			return
 		case <-mapping.Ctx.Done():
-			global.Log.Info("关闭端口监听 :", pubPort)
+			global.InfoLog.Println("关闭端口监听 :", pubPort)
 			fmt.Printf("关闭端口监听 :%s", pubPort)
 			_ = listener.Close()
 			return
@@ -61,7 +61,7 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 			case <-mapping.Ctx.Done():
 				return
 			default:
-				global.Log.Error("listener.Accept() 连接失败:", err)
+				global.ErrorLog.Println("listener.Accept() 连接失败:", err)
 				fmt.Printf("连接失败: %v", err)
 				continue
 			}
@@ -78,7 +78,7 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 		// smux 会把多个这样的 stream 数据复用在一条实际连接上
 		stream, err := session.OpenStream()
 		if err != nil {
-			global.Log.Error("session.OpenStream() smux stream创建失败: ", err)
+			global.ErrorLog.Println("session.OpenStream() smux stream创建失败: ", err)
 			fmt.Printf("smux stream 创建失败: %v", err)
 			_ = publicConn.Close()
 			continue
@@ -89,7 +89,7 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 		// 客户端拿到这个地址后，就会在自己的本地去连接这个目标地址，然后形成一对 stream <-> 内网本地服务连接 的代理。
 		_, err = stream.Write([]byte("DIRECT\n" + target + "\n"))
 		if err != nil {
-			global.Log.Error("写入目标地址失败:", err)
+			global.ErrorLog.Println("写入目标地址失败:", err)
 			_ = publicConn.Close()
 			_ = stream.Close()
 			continue
