@@ -21,6 +21,7 @@ type Mapping struct {
 	Ctx        context.Context    // 上下文，用于关闭连接
 	CtxCancel  context.CancelFunc // 上下文取消函数，用于关闭连接
 	Traffic    int64              // 流量统计
+	RateLimit  int64              // 流量限速
 	Status     string             // 连接状态，例如 "active", "inactive"
 	Enable     bool               // 是否启用，例如 true, false
 }
@@ -41,11 +42,10 @@ func NewPool() *Pool {
 }
 
 // Set 添加新映射关系
-func (p *Pool) Set(name, port, target string, enable bool, traffic int64) {
+func (p *Pool) Set(name, port, target string, enable bool, traffic int64, rateLimit int64) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.totalConnections++
-	//key := fmt.Sprintf("%s%v", "rule", p.totalConnections+1)
 	p.table[name] = &Mapping{
 		Name:       name,
 		PublicPort: port,
@@ -53,6 +53,7 @@ func (p *Pool) Set(name, port, target string, enable bool, traffic int64) {
 		Status:     "inactive",
 		Enable:     enable,
 		Traffic:    traffic,
+		RateLimit:  rateLimit,
 	}
 }
 
@@ -114,6 +115,18 @@ func (p *Pool) UpdateStatus(name string, status string) bool {
 		}
 	}
 	return false
+}
+
+func (p *Pool) UpdateRateLimit(name string, rateLimit int64) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	// 查找对应名称的映射
+	for _, mapping := range p.table {
+		if mapping.Name == name {
+			mapping.RateLimit = rateLimit
+			return
+		}
+	}
 }
 
 // Close 关闭连接

@@ -43,6 +43,7 @@ func StartService(w http.ResponseWriter, r *http.Request) {
 	}
 	// 开启服务
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
+	// nolint:contextcheck
 	go serverCore.StartServer(global.Ctx)
 	global.IsRun = true
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{

@@ -18,6 +18,7 @@ type Mapping struct {
 	Enable     bool   `json:"enable"`
 	Status     string `json:"status"` // 连接状态，从连接池获取
 	Traffic    int64  `json:"traffic"`
+	RateLimit  int64  `json:"rateLimit"`
 }
 
 // mappingsHandler 获取所有映射列表
@@ -48,6 +49,8 @@ func mappingsHandler(w http.ResponseWriter, r *http.Request) {
 			TargetAddr: m.TargetAddr,
 			Enable:     enable,
 			Status:     m.Status,
+			Traffic:    m.Traffic,
+			RateLimit:  m.RateLimit,
 		})
 	}
 
@@ -107,6 +110,7 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 		PublicPort: strconv.Itoa(mapping.PublicPort),
 		TargetAddr: mapping.TargetAddr,
 		Enable:     dbEnable, // 使用处理后的Enable值
+		RateLimit:  mapping.RateLimit,
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("添加映射失败: %v", err), http.StatusInternalServerError)
@@ -115,7 +119,7 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 添加到连接池
-	global.ConnPool.Set(name, strconv.Itoa(mapping.PublicPort), mapping.TargetAddr, false, mapping.Traffic)
+	global.ConnPool.Set(name, strconv.Itoa(mapping.PublicPort), mapping.TargetAddr, false, mapping.Traffic, mapping.RateLimit)
 
 	// 返回成功响应
 	w.Header().Set("Content-Type", "application/json")
