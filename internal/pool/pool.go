@@ -41,7 +41,7 @@ func NewPool() *Pool {
 }
 
 // Set 添加新映射关系
-func (p *Pool) Set(name, port, target string, enable bool) {
+func (p *Pool) Set(name, port, target string, enable bool, traffic int64) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.totalConnections++
@@ -52,6 +52,7 @@ func (p *Pool) Set(name, port, target string, enable bool) {
 		TargetAddr: target,
 		Status:     "inactive",
 		Enable:     enable,
+		Traffic:    traffic,
 	}
 }
 
@@ -120,11 +121,14 @@ func (p *Pool) Close(name string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	// 煎炒name是否存在
-	if _, ok := p.table[name]; !ok {
+	mapping, ok := p.table[name]
+	if !ok {
 		return errors.New("规则不存在，请检查name是否正确")
 	}
 	// 关闭上下文
-	p.table[name].CtxCancel()
+	if mapping.Status == "active" {
+		p.table[name].CtxCancel()
+	}
 	return nil
 }
 
@@ -147,4 +151,10 @@ func (p *Pool) GetMapping(name string) *Mapping {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.table[name]
+}
+
+func (p *Pool) UpdateTra(name string, traffic int64) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.table[name].Traffic = traffic
 }

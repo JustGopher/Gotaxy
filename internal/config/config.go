@@ -3,6 +3,7 @@ package config
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"github/JustGopher/Gotaxy/internal/pool"
 	"github/JustGopher/Gotaxy/internal/storage/models"
@@ -24,7 +25,7 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 		fmt.Printf("ConfigLoad() 查询配置数据失败 -> %v", err)
 		return
 	}
-	if len(cfgMap) != 3 {
+	if len(cfgMap) != 4 {
 		err = models.InsertCfg(db, "server_ip", "127.0.0.1")
 		if err != nil {
 			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
@@ -37,6 +38,10 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 		if err != nil {
 			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
 		}
+		err = models.InsertCfg(db, "total_traffic", "0")
+		if err != nil {
+			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
+		}
 		cfgMap, err = models.GetAllCfg(db)
 		if err != nil {
 			fmt.Printf("ConfigLoad() 创建配置数据失败 -> %v", err)
@@ -46,6 +51,12 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 	cfg.ServerIP = cfgMap["server_ip"]
 	cfg.ListenPort = cfgMap["listen_port"]
 	cfg.Email = cfgMap["email"]
+	cfg.TotalTraffic, err = strconv.ParseInt(cfgMap["total_traffic"], 10, 64)
+	if err != nil {
+		fmt.Printf("ConfigLoad() 解析配置数据失败 -> %v", err)
+		return
+	}
+
 	fmt.Println("已加载配置...")
 	mpg, err := models.GetAllMpg(db)
 	if err != nil {
@@ -53,10 +64,10 @@ func (cfg *Config) ConfigLoad(db *sql.DB, pool *pool.Pool) {
 		return
 	}
 	for _, v := range mpg {
-		if v.Enable == "open" {
-			pool.Set(v.Name, v.PublicPort, v.TargetAddr, true)
+		if v.Enable == true {
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, true, v.Traffic)
 		} else {
-			pool.Set(v.Name, v.PublicPort, v.TargetAddr, false)
+			pool.Set(v.Name, v.PublicPort, v.TargetAddr, false, v.Traffic)
 		}
 	}
 }
