@@ -19,7 +19,7 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 	listener, err := net.Listen("tcp", ":"+pubPort)
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
-			log.Printf("端口 %s 已被占用", pubPort)
+			fmt.Printf("端口 %s 已被占用\n", pubPort)
 			return
 		}
 		fmt.Printf("监听端口 %s 失败: %v\n", pubPort, err)
@@ -37,12 +37,12 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 		select {
 		case <-ctx.Done():
 			global.InfoLog.Println("关闭端口监听 :", pubPort)
-			fmt.Printf("关闭端口监听 :%s", pubPort)
+			fmt.Printf("关闭端口监听 :%s\n", pubPort)
 			_ = listener.Close()
 			return
 		case <-mapping.Ctx.Done():
 			global.InfoLog.Println("关闭端口监听 :", pubPort)
-			fmt.Printf("关闭端口监听 :%s", pubPort)
+			fmt.Printf("关闭端口监听 :%s\n", pubPort)
 			_ = listener.Close()
 			return
 		}
@@ -95,19 +95,28 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 			continue
 		}
 
-		fmt.Printf("建立转发: 端口 %s <=> 客户端本地 %s", pubPort, target)
-		go proxy(publicConn, stream)
-		go proxy(stream, publicConn)
+		fmt.Printf("建立转发: 端口 %s <=> 客户端本地 %s\n", pubPort, target)
+		go proxy(publicConn, stream, nil)
+		go proxy(stream, publicConn, mapping)
 	}
 }
 
 // proxy 数据转发
-func proxy(dst, src net.Conn) {
+func proxy(dst, src net.Conn, mapping *pool.Mapping) {
 	defer func(dst net.Conn) {
 		_ = dst.Close()
 	}(dst)
 	defer func(src net.Conn) {
 		_ = src.Close()
 	}(src)
-	_, _ = io.Copy(dst, src)
+
+	if mapping == nil {
+		_, _ = io.Copy(dst, src)
+		return
+	}
+
+	// 正常流量转发
+	byteCount, _ := io.Copy(dst, src)
+	mapping.Traffic += byteCount
+	global.InfoLog.Printf("流量转发: %d 字节", byteCount)
 }

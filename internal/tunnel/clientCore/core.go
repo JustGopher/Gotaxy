@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/xtaci/smux"
 	"io"
 	"log"
 	"net"
@@ -12,8 +13,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"github.com/xtaci/smux"
 )
 
 // Start 启动
@@ -132,11 +131,10 @@ func proxy(dst, src net.Conn) {
 // HelloServe 测试服务
 func HelloServe() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		timeNow := time.Now().Format("2006-01-02 15:04:05")
-		_, err := w.Write([]byte("Hello, World, " + timeNow))
-		if err != nil {
-			return
-		}
+		timeNow := time.Now().Format(time.UnixDate)
+		timeNow = "现在时间: " + timeNow + "\n你好 Gotaxy\n" + "现在时间: " + time.Now().Format(time.UnixDate)
+		fmt.Println(timeNow)
+		_, _ = w.Write([]byte(timeNow))
 	})
 
 	err := http.ListenAndServe(":8080", nil)
