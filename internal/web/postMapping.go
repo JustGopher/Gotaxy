@@ -96,8 +96,8 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 处理Enable字段
-	dbEnable := false
-	if mapping.Enable == true {
+	var dbEnable bool
+	if mapping.Enable {
 		dbEnable = true
 	}
 
@@ -194,7 +194,7 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 	// 解析请求体
 	var request struct {
 		ID     int  `json:"id"`
-		Enable bool `json:"enable"` // "running" 或 "stopped"
+		Enable bool `json:"enable"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -206,11 +206,6 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 	// 验证参数
 	if request.ID <= 0 {
 		http.Error(w, "ID必须大于0", http.StatusBadRequest)
-		return
-	}
-
-	if request.Enable != true && request.Enable != false {
-		http.Error(w, "Enable必须为'running'或'stopped'", http.StatusBadRequest)
 		return
 	}
 
@@ -229,7 +224,7 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 	// 转换Enable值
 	dbEnable := false
 	poolEnable := false
-	if request.Enable == true {
+	if request.Enable {
 		dbEnable = true
 		poolEnable = true
 	}

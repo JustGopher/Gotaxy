@@ -426,7 +426,7 @@ func UpdMapping(args []string) {
 		return
 	}
 
-	if global.ConnPool.GetMapping(args[0]).Enable != false {
+	if global.ConnPool.GetMapping(args[0]).Enable {
 		fmt.Println("当前映射正在运行中，无法更新，请关闭后重试")
 		return
 	}
