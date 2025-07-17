@@ -24,7 +24,7 @@ func Start() {
 	err := http.ListenAndServe(":9001", nil)
 	if err != nil {
 		fmt.Println("Web() 启动失败: ", err)
-		global.Log.Error("Web() 启动失败: ", err)
+		global.ErrorLog.Println("Web() 启动失败: ", err)
 		return
 	}
 }
@@ -34,7 +34,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	err := tmpl.ExecuteTemplate(w, "index.html", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		global.Log.Error("index() 模板渲染失败: ", err)
+		global.ErrorLog.Println("index() 模板渲染失败: ", err)
 		return
 	}
 }

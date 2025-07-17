@@ -208,6 +208,16 @@
 <body>
     <h1>Gotaxy</h1>
 
+    <!-- 服务状态显示 -->
+    <div>
+        <h2>服务状态</h2>
+        <div id="serviceStatus">
+            <!-- 服务状态将通过JavaScript动态加载 -->
+        </div>
+        <button id="startServiceBtn">启动服务</button>
+        <button id="stopServiceBtn">停止服务</button>
+    </div>
+
     <div>
         <!-- 下载证书 -->
         <p>请按照以下步骤操作：</p>
@@ -607,7 +617,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             // 获取配置数据并填充显示区域
-            fetch('/getConf')
+            fetch('/api/getConf')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('display-server_ip').textContent = data.server_ip;
@@ -621,7 +631,7 @@
                 document.getElementById('config-modal').style.display = 'block';
 
                 // 填充表单数据
-                fetch('/getConf')
+                fetch('/api/getConf')
                     .then(response => response.json())
                     .then(data => {
                         Object.keys(data).forEach(key => {
@@ -650,7 +660,7 @@
                 }
 
                 // 发送更新请求
-                fetch('/updateConf', {
+                fetch('/api/updateConf', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -681,6 +691,84 @@
                 }
             }
         });
+
+        // 服务状态相关代码
+        const serviceStatus = document.getElementById('serviceStatus');
+        const startServiceBtn = document.getElementById('startServiceBtn');
+        const stopServiceBtn = document.getElementById('stopServiceBtn');
+
+        // 获取服务状态
+        function getServiceStatus() {
+            fetch('/api/service')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const isRunning = data.data.isRunning;
+                        if (isRunning === true) {
+                            serviceStatus.innerHTML = '<span class="status-running">服务已启动</span>';
+                            startServiceBtn.disabled = true;
+                            stopServiceBtn.disabled = false;
+                        } else {
+                            serviceStatus.innerHTML = '<span class="status-stopped">服务已停止</span>';
+                            startServiceBtn.disabled = false;
+                            stopServiceBtn.disabled = true;
+                        }
+                    } else {
+                        serviceStatus.innerHTML = '获取服务状态失败: ' + (data.message || '未知错误');
+                    }
+                })
+                .catch(error => {
+                    serviceStatus.innerHTML = '获取服务状态失败: ' + error.message;
+                });
+        }
+
+        // 启动服务
+        startServiceBtn.addEventListener('click', function () {
+            fetch('/api/start', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        alert(data.message); // 弹窗显示错误信息
+                        return;
+                    }
+                    // 成功启动，刷新服务状态
+                    getServiceStatus();
+                })
+                .catch(error => {
+                    console.error('启动服务失败:', error);
+                    alert('启动服务失败：' + error.message);
+                });
+        });
+
+        // 停止服务
+        stopServiceBtn.addEventListener('click', function () {
+            fetch('/api/stop', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        alert(data.message); // 显示错误信息
+                        return;
+                    }
+
+                    // 成功停止，刷新服务状态
+                    getServiceStatus();
+                })
+                .catch(error => {
+                    console.error('停止服务失败:', error);
+                    alert('停止服务失败：' + error.message);
+                });
+        });
+
+
+        // 页面加载时获取一次服务状态
+        getServiceStatus();
+
+        // 每5秒检查一次服务状态
+        setInterval(getServiceStatus, 5000);
     </script>
 
 </body>

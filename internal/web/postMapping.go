@@ -74,7 +74,7 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&mapping)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("解析请求失败: %v", err), http.StatusBadRequest)
-		global.Log.Error("解析添加映射请求失败: ", err)
+		global.ErrorLog.Println("解析添加映射请求失败: ", err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func addMappingHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("添加映射失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("添加映射失败: ", err)
+		global.ErrorLog.Println("添加映射失败: ", err)
 		return
 	}
 
@@ -166,7 +166,7 @@ func delMappingHandler(w http.ResponseWriter, r *http.Request) {
 	err = models.DeleteMapByName(global.DB, name)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("删除映射失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("删除映射失败: ", err)
+		global.ErrorLog.Println("删除映射失败: ", err)
 		return
 	}
 
@@ -199,7 +199,7 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("解析请求失败: %v", err), http.StatusBadRequest)
-		global.Log.Error("解析启用/禁用映射请求失败: ", err)
+		global.ErrorLog.Println("解析启用/禁用映射请求失败: ", err)
 		return
 	}
 
@@ -238,14 +238,14 @@ func UpdateMapEna(w http.ResponseWriter, r *http.Request) {
 	_, err = global.DB.Exec("UPDATE mapping SET enable = ? WHERE name = ?", dbEnable, name)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("更新映射状态失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("更新映射状态失败: ", err)
+		global.ErrorLog.Println("更新映射状态失败: ", err)
 		return
 	}
 
 	// 更新连接池中的映射状态
 	updated := global.ConnPool.UpdateEnable(name, poolEnable)
 	if !updated {
-		global.Log.Warn("在连接池中未找到映射: ", name)
+		global.ErrorLog.Println("在连接池中未找到映射: ", name)
 	}
 
 	// 返回成功响应
