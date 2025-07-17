@@ -30,7 +30,11 @@ func (w *RollingFileWriter) Write(p []byte) (n int, err error) {
 	if w.shouldRotate() || w.currentFile == nil {
 		w.rotate()
 	}
-	return w.currentFile.Write(p)
+	write, err := w.currentFile.Write(p)
+	if err != nil {
+		return 0, fmt.Errorf("写入日志失败: %w", err) // 包装错误
+	}
+	return write, nil
 }
 
 // ensureDir 确保目录存在

@@ -212,7 +212,7 @@ func setIP(args []string) {
 	global.Config.ServerIP = ip
 	err := models.UpdateCfg(global.DB, "server_ip", ip)
 	if err != nil {
-		global.ErrorLog.Println("setIP() 更新配置数据失败: %v", err)
+		global.ErrorLog.Printf("setIP() 更新配置数据失败: %v", err)
 		fmt.Println("更新配置数据失败:", err)
 		return
 	}
@@ -262,7 +262,7 @@ func setEmail(args []string) {
 	global.Config.Email = args[0]
 	err := models.UpdateCfg(global.DB, "email", args[0])
 	if err != nil {
-		global.ErrorLog.Println("setEmail() 更新配置数据失败: %v", err)
+		global.ErrorLog.Printf("setEmail() 更新配置数据失败: %v", err)
 		fmt.Println("更新配置数据失败:", err)
 		return
 	}
