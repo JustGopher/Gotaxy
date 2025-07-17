@@ -17,4 +17,6 @@ func InitRouter() {
 	http.HandleFunc("/api/mapping/add", addMappingHandler)
 	http.HandleFunc("/api/mapping/delete", delMappingHandler)
 	http.HandleFunc("/api/mapping/enable", UpdateMapEna)
+	http.HandleFunc("/start", StartService)
+	http.HandleFunc("/stop", StopService)
 }

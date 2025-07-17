@@ -26,7 +26,7 @@ var currentSession atomic.Value
 func StartServer(ctx context.Context) {
 	pool := global.ConnPool
 	if pool == nil {
-		global.Log.Info("StartServer() 连接池未初始化")
+		global.ErrorLog.Println("StartServer() 连接池未初始化")
 		panic("StartServer() 连接池未初始化")
 	}
 	allPortMap := pool.GetAllPort()
@@ -47,13 +47,13 @@ func StartServer(ctx context.Context) {
 func waitControlConn(ctx context.Context) {
 	tlsCfg, err := LoadServerTLSConfig("certs/server.crt", "certs/server.key", "certs/ca.crt")
 	if err != nil {
-		global.Log.Error("waitControlConn() 加载 TLS 配置失败: ", err)
+		global.ErrorLog.Println("waitControlConn() 加载 TLS 配置失败: ", err)
 		panic("加载 TLS 配置失败: " + err.Error())
 	}
 
 	listener, err := tls.Listen("tcp", ":"+global.Config.ListenPort, tlsCfg)
 	if err != nil {
-		global.Log.Error("waitControlConn() 监听失败: ", err)
+		global.ErrorLog.Println("waitControlConn() 监听失败: ", err)
 		panic("监听失败: " + err.Error())
 	}
 	fmt.Printf("控制端口监听 %s 端口中...\n", global.Config.ListenPort)
@@ -72,7 +72,7 @@ func waitControlConn(ctx context.Context) {
 				return // 正常退出
 			default:
 				fmt.Println("控制连接接入失败:", err)
-				global.Log.Error("控制连接接入失败:", err)
+				global.ErrorLog.Println("控制连接接入失败:", err)
 				continue
 			}
 		}
@@ -80,12 +80,12 @@ func waitControlConn(ctx context.Context) {
 		session, err := smux.Server(conn, nil)
 		if err != nil {
 			fmt.Println("创建会话失败:", err)
-			global.Log.Error("创建会话失败:", err)
+			global.ErrorLog.Println("创建会话失败:", err)
 			_ = conn.Close()
 			continue
 		}
 
-		global.Log.Info("会话建立成功")
+		global.InfoLog.Println("会话建立成功")
 		currentSession.Store(session)
 	}
 }
@@ -106,7 +106,7 @@ func startPublicListener(ctx context.Context, pubPort string) {
 
 	go func() {
 		<-ctx.Done()
-		global.Log.Info("关闭公网端口监听 :", pubPort)
+		global.InfoLog.Println("关闭公网端口监听 :", pubPort)
 		fmt.Printf("关闭公网端口监听 :%s", pubPort)
 		_ = listener.Close()
 	}()
@@ -118,7 +118,7 @@ func startPublicListener(ctx context.Context, pubPort string) {
 			case <-ctx.Done():
 				return
 			default:
-				global.Log.Error("listener.Accept() 连接失败:", err)
+				global.ErrorLog.Println("listener.Accept() 连接失败:", err)
 				fmt.Printf("连接失败: %v", err)
 				continue
 			}
@@ -134,7 +134,7 @@ func startPublicListener(ctx context.Context, pubPort string) {
 
 		stream, err := session.OpenStream()
 		if err != nil {
-			global.Log.Error("session.OpenStream() smux stream创建失败: ", err)
+			global.ErrorLog.Println("session.OpenStream() smux stream创建失败: ", err)
 			fmt.Printf("smux stream 创建失败: %v", err)
 			_ = publicConn.Close()
 			continue
@@ -143,7 +143,7 @@ func startPublicListener(ctx context.Context, pubPort string) {
 		// 通知客户端目标地址
 		_, err = stream.Write([]byte(target + "\n"))
 		if err != nil {
-			global.Log.Error("写入目标地址失败:", err)
+			global.ErrorLog.Println("写入目标地址失败:", err)
 			_ = publicConn.Close()
 			_ = stream.Close()
 			continue
@@ -160,13 +160,13 @@ func proxy(dst, src net.Conn) {
 	defer func(dst net.Conn) {
 		err := dst.Close()
 		if err != nil {
-			global.Log.Info("proxy() 关闭连接失败: ", err)
+			global.ErrorLog.Println("proxy() 关闭连接失败: ", err)
 		}
 	}(dst)
 	defer func(src net.Conn) {
 		err := src.Close()
 		if err != nil {
-			global.Log.Info("proxy() 关闭连接失败: ", err)
+			global.ErrorLog.Println("proxy() 关闭连接失败: ", err)
 		}
 	}(src)
 	_, _ = io.Copy(dst, src)

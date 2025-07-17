@@ -14,13 +14,13 @@ func main() {
 	global.Ctx, global.Cancel = context.WithCancel(context.Background())
 
 	global.DB = inits.DBInit()
-	inits.LogInit(global.Log)
+	inits.LogInit()
 
 	global.ConnPool = pool.NewPool()
 
 	global.Config.ConfigLoad(global.DB, global.ConnPool)
 
-	global.Log.Info("Gotaxy 启动成功")
+	global.InfoLog.Println("Gotaxy 启动成功")
 
 	go web.Start()
 
