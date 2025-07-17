@@ -5,39 +5,72 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-// GetEncoder 获取编码器
-func GetEncoder() zapcore.Encoder {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	return zapcore.NewJSONEncoder(encoderConfig)
+// RollingFileWriter 滚动日志写入器
+type RollingFileWriter struct {
+	dirPath     string
+	currentDate string
+	currentFile *os.File
 }
 
-// LogWriter 日志写入器
-func LogWriter(path string) zapcore.WriteSyncer {
-	// 确保目录存在
-	err := os.MkdirAll(path, 0755)
-	if err != nil {
-		fmt.Printf("Failed to create directory %s: %v\n", path, err)
-		return zapcore.AddSync(os.Stdout) // 默认输出到标准输出
+// NewRollingFileWriter 创建一个新的滚动日志写入器
+func NewRollingFileWriter(path string) *RollingFileWriter {
+	writer := &RollingFileWriter{
+		dirPath:     path,
+		currentDate: time.Now().Format("2006-01-02"),
 	}
+	writer.ensureDir()
+	return writer
+}
 
-	// 获取当前日期
-	currentDate := time.Now().Format("2006-01-02")
-	fileName := fmt.Sprintf("%s.log", currentDate)
-	filePath := filepath.Join(path, fileName)
+// Write 写入日志，实现io的Writer接口
+func (w *RollingFileWriter) Write(p []byte) (n int, err error) {
+	// 当日期发生变化时滚动日志
+	if w.shouldRotate() || w.currentFile == nil {
+		w.rotate()
+	}
+	write, err := w.currentFile.Write(p)
+	if err != nil {
+		return 0, fmt.Errorf("写入日志失败: %w", err) // 包装错误
+	}
+	return write, nil
+}
 
-	// 打开或创建文件
+// ensureDir 确保目录存在
+func (w *RollingFileWriter) ensureDir() {
+	err := os.MkdirAll(w.dirPath, 0755)
+	if err != nil {
+		fmt.Printf("Failed to create directory %s: %v\n", w.dirPath, err)
+	}
+}
+
+// openNewFile 打开新的日志文件
+func (w *RollingFileWriter) openNewFile() {
+	today := time.Now().Format("2006-01-02")
+	filename := fmt.Sprintf("%s.log", today)
+	filePath := filepath.Join(w.dirPath, filename)
+
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Failed to open file %s: %v\n", filePath, err)
-		return zapcore.AddSync(os.Stdout) // 默认输出到标准输出
+		w.currentFile = os.Stdout
+		return
 	}
 
-	return zapcore.AddSync(file)
+	w.currentFile = file
+	w.currentDate = today
+}
+
+// shouldRotate 判断是否需要滚动
+func (w *RollingFileWriter) shouldRotate() bool {
+	return time.Now().Format("2006-01-02") != w.currentDate
+}
+
+// rotate 滚动日志
+func (w *RollingFileWriter) rotate() {
+	if w.currentFile != nil {
+		_ = w.currentFile.Close()
+	}
+	w.openNewFile()
 }

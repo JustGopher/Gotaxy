@@ -65,10 +65,10 @@ func OpenMapping(args []string) {
 		}
 		updateMap, err := models.UpdateMap(global.DB, mapping.Name, mapping.PublicPort, mapping.TargetAddr, enable)
 		if err != nil {
-			global.Log.Error("OpenMapping() 修改规则失败", err)
+			global.ErrorLog.Println("OpenMapping() 修改规则失败", err)
 			return
 		}
-		global.Log.Info("OpenMapping() 修改 '%s' 成功", updateMap.Name)
+		global.ErrorLog.Printf("OpenMapping() 修改 '%s' 成功", updateMap.Name)
 	} else {
 		// 启动映射
 		ok := global.ConnPool.UpdateEnable(name, true)
@@ -182,7 +182,7 @@ func generateCA(args []string) {
 			fmt.Printf("确定要重新生成 CA 证书吗？(y/n) \n")
 			readline, err := shell.Rl.Readline()
 			if err != nil {
-				global.Log.Errorf("generateCA() shellcmd.Rl.Readline() 读取输入失败: %v", err)
+				global.ErrorLog.Printf("generateCA() shellcmd.Rl.Readline() 读取输入失败: %v", err)
 				fmt.Println("读取输入失败:", err)
 				return
 			}
@@ -200,7 +200,7 @@ func generateCA(args []string) {
 	// 生成 CA 证书
 	err := tlsgen.GenerateCA("certs", year, overwrite)
 	if err != nil {
-		global.Log.Errorf("generateCA() 生成 CA 证书失败: %v", err)
+		global.ErrorLog.Printf("generateCA() 生成 CA 证书失败: %v", err)
 		log.Println("generateCA() 生成 CA 证书失败:", err)
 		return
 	}
@@ -232,7 +232,7 @@ func generateCerts(args []string) {
 	// 生成证书
 	err := tlsgen.GenerateServerAndClientCerts(global.Config.ServerIP, "certs", day, "certs/ca.crt", "certs/ca.key")
 	if err != nil {
-		global.Log.Errorf("generateCerts() 生成证书失败: %v", err)
+		global.ErrorLog.Printf("generateCerts() 生成证书失败: %v", err)
 		log.Println("generateCerts() 生成证书失败:", err)
 		return
 	}
@@ -286,7 +286,7 @@ func setIP(args []string) {
 	global.Config.ServerIP = ip
 	err := models.UpdateCfg(global.DB, "server_ip", ip)
 	if err != nil {
-		global.Log.Errorf("setIP() 更新配置数据失败: %v", err)
+		global.ErrorLog.Printf("setIP() 更新配置数据失败: %v", err)
 		fmt.Println("更新配置数据失败:", err)
 		return
 	}
@@ -336,7 +336,7 @@ func setEmail(args []string) {
 	global.Config.Email = args[0]
 	err := models.UpdateCfg(global.DB, "email", args[0])
 	if err != nil {
-		global.Log.Errorf("setEmail() 更新配置数据失败: %v", err)
+		global.ErrorLog.Printf("setEmail() 更新配置数据失败: %v", err)
 		fmt.Println("更新配置数据失败:", err)
 		return
 	}
@@ -374,7 +374,7 @@ func AddMapping(args []string) {
 		Enable:     "close",
 	})
 	if err != nil {
-		global.Log.Errorf("addMapping() 插入映射数据失败: %v", err)
+		global.ErrorLog.Printf("addMapping() 插入映射数据失败: %v", err)
 		fmt.Println("插入映射数据失败:", err)
 		return
 	}
@@ -407,7 +407,7 @@ func DelMapping(args []string) {
 
 	err := models.DeleteMapByName(global.DB, args[0])
 	if err != nil {
-		global.Log.Errorf("delMapping() 删除映射数据失败: %v", err)
+		global.ErrorLog.Printf("delMapping() 删除映射数据失败: %v", err)
 		fmt.Println("删除映射数据失败:", err)
 		return
 	}
@@ -439,7 +439,7 @@ func UpdMapping(args []string) {
 
 	_, err = models.UpdateMap(global.DB, args[0], args[1], args[2], args[3])
 	if err != nil {
-		global.Log.Errorf("updMapping() 更新映射数据失败: %v", err)
+		global.ErrorLog.Printf("updMapping() 更新映射数据失败: %v", err)
 		fmt.Println("更新映射数据失败:", err)
 		return
 	}

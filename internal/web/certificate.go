@@ -35,7 +35,7 @@ func generateCAHandler(w http.ResponseWriter, r *http.Request) {
 	err := tlsgen.GenerateCA(certDir, 365, true)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("生成CA证书失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("生成CA证书失败: ", err)
+		global.ErrorLog.Println("生成CA证书失败: ", err)
 		return
 	}
 
@@ -50,11 +50,11 @@ func generateCAHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if needRegenerateCerts {
 		if _, err := w.Write([]byte(`{"status":"success","message":"CA证书生成成功，请重新生成服务端和客户端证书"}`)); err != nil {
-			global.Log.Error("写入响应失败: ", err)
+			global.ErrorLog.Println("写入响应失败: ", err)
 		}
 	} else {
 		if _, err := w.Write([]byte(`{"status":"success","message":"CA证书生成成功"}`)); err != nil {
-			global.Log.Error("写入响应失败: ", err)
+			global.ErrorLog.Println("写入响应失败: ", err)
 		}
 	}
 }
@@ -87,7 +87,7 @@ func generateCertsHandler(w http.ResponseWriter, r *http.Request) {
 	err := tlsgen.GenerateServerAndClientCerts(ip, certDir, 365, caCertPath, caKeyPath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("生成证书失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("生成服务端和客户端证书失败: ", err)
+		global.ErrorLog.Println("生成服务端和客户端证书失败: ", err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func generateCertsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write([]byte(`{"status":"success","message":"服务端和客户端证书生成成功"}`)); err != nil {
-		global.Log.Error("写入响应失败: ", err)
+		global.ErrorLog.Println("写入响应失败: ", err)
 	}
 }
 
@@ -132,7 +132,7 @@ func certStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write([]byte(jsonResponse)); err != nil {
-		global.Log.Error("写入响应失败: ", err)
+		global.ErrorLog.Println("写入响应失败: ", err)
 	}
 }
 
@@ -195,7 +195,7 @@ func createTempZipFile(w http.ResponseWriter) (*os.File, error) {
 	zipFile, err := os.CreateTemp("", "certs-*.zip")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("创建临时文件失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("创建临时文件失败: ", err)
+		global.ErrorLog.Println("创建临时文件失败: ", err)
 		return nil, fmt.Errorf("创建临时文件失败: %w", err)
 	}
 	return zipFile, nil
@@ -204,10 +204,10 @@ func createTempZipFile(w http.ResponseWriter) (*os.File, error) {
 // cleanupTempFile 清理临时文件
 func cleanupTempFile(zipFile *os.File) {
 	if err := zipFile.Close(); err != nil {
-		global.Log.Error("关闭临时文件失败: ", err)
+		global.ErrorLog.Println("关闭临时文件失败: ", err)
 	}
 	if err := os.Remove(zipFile.Name()); err != nil {
-		global.Log.Error("删除临时文件失败: ", err)
+		global.ErrorLog.Println("删除临时文件失败: ", err)
 	}
 }
 
@@ -217,7 +217,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 	zipWriter := zip.NewWriter(zipFile)
 	defer func() {
 		if err := zipWriter.Close(); err != nil {
-			global.Log.Error("关闭zip写入器失败: ", err)
+			global.ErrorLog.Println("关闭zip写入器失败: ", err)
 		}
 	}()
 
@@ -228,7 +228,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 		fileToZip, err := os.Open(filePath)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("打开文件失败: %v", err), http.StatusInternalServerError)
-			global.Log.Error("打开文件失败: ", err)
+			global.ErrorLog.Println("打开文件失败: ", err)
 			return fmt.Errorf("打开文件 %s 失败: %w", filePath, err)
 		}
 
@@ -236,7 +236,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 		func(f *os.File) {
 			defer func() {
 				if err := f.Close(); err != nil {
-					global.Log.Error("关闭文件失败: ", err)
+					global.ErrorLog.Println("关闭文件失败: ", err)
 				}
 			}()
 
@@ -244,7 +244,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 			info, err := f.Stat()
 			if err != nil {
 				http.Error(w, fmt.Sprintf("获取文件信息失败: %v", err), http.StatusInternalServerError)
-				global.Log.Error("获取文件信息失败: ", err)
+				global.ErrorLog.Println("获取文件信息失败: ", err)
 				return
 			}
 
@@ -252,7 +252,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 			header, err := zip.FileInfoHeader(info)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("创建zip文件头失败: %v", err), http.StatusInternalServerError)
-				global.Log.Error("创建zip文件头失败: ", err)
+				global.ErrorLog.Println("创建zip文件头失败: ", err)
 				return
 			}
 
@@ -264,7 +264,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 			writer, err := zipWriter.CreateHeader(header)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("创建zip文件条目失败: %v", err), http.StatusInternalServerError)
-				global.Log.Error("创建zip文件条目失败: ", err)
+				global.ErrorLog.Println("创建zip文件条目失败: ", err)
 				return
 			}
 
@@ -272,7 +272,7 @@ func addFilesToZip(w http.ResponseWriter, zipFile *os.File) error {
 			_, err = io.Copy(writer, f)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("写入zip文件失败: %v", err), http.StatusInternalServerError)
-				global.Log.Error("写入zip文件失败: ", err)
+				global.ErrorLog.Println("写入zip文件失败: ", err)
 				return
 			}
 		}(fileToZip)
@@ -286,14 +286,14 @@ func sendZipToClient(w http.ResponseWriter, zipFile *os.File) error {
 	// 关闭zip写入器
 	if err := zipFile.Sync(); err != nil {
 		http.Error(w, fmt.Sprintf("同步文件失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("同步文件失败: ", err)
+		global.ErrorLog.Println("同步文件失败: ", err)
 		return fmt.Errorf("同步文件失败: %w", err)
 	}
 
 	// 重置文件指针到文件开始
 	if _, err := zipFile.Seek(0, 0); err != nil {
 		http.Error(w, fmt.Sprintf("重置文件指针失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("重置文件指针失败: ", err)
+		global.ErrorLog.Println("重置文件指针失败: ", err)
 		return fmt.Errorf("重置文件指针失败: %w", err)
 	}
 
@@ -304,7 +304,7 @@ func sendZipToClient(w http.ResponseWriter, zipFile *os.File) error {
 	// 发送文件内容
 	if _, err := io.Copy(w, zipFile); err != nil {
 		http.Error(w, fmt.Sprintf("发送文件失败: %v", err), http.StatusInternalServerError)
-		global.Log.Error("发送文件失败: ", err)
+		global.ErrorLog.Println("发送文件失败: ", err)
 		return fmt.Errorf("发送文件失败: %w", err)
 	}
 
