@@ -96,6 +96,7 @@ func CloseMapping(args []string) {
 		fmt.Println(err.Error())
 		return
 	}
+	global.ConnPool.UpdateEnable(name, false)
 	fmt.Printf("关闭 '%s' 成功", name)
 }
 
