@@ -181,6 +181,7 @@ func (p *Pool) GetMapping(name string) *Mapping {
 	return p.table[name]
 }
 
+// UpdateTra 更新流量
 func (p *Pool) UpdateTra(name string, traffic int64) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()

@@ -368,7 +368,7 @@ func AddMapping(args []string) {
 		TargetAddr: args[2],
 		Enable:     false,
 		Traffic:    0,
-		RateLimit:  1024*1024*2,
+		RateLimit:  1024 * 1024 * 2,
 	})
 	if err != nil {
 		global.ErrorLog.Printf("addMapping() 插入映射数据失败: %v", err)
