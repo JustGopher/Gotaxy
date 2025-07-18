@@ -455,8 +455,11 @@ func UpdMapping(args []string) {
 	}
 
 	global.ConnPool.UpdateRateLimit(args[0], int64(retaLimit))
+	global.ConnPool.Update(args[0], args[1], args[2], int64(retaLimit))
 }
 
+// Heart 心跳
+// 格式：heart
 func Heart(args []string) {
 	fmt.Println(global.Ring.Status(global.IsRun))
 }

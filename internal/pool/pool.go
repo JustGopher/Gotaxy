@@ -129,6 +129,21 @@ func (p *Pool) UpdateRateLimit(name string, rateLimit int64) {
 	}
 }
 
+// Update 更新映射关系
+func (p *Pool) Update(name string, port string, add string, limit int64) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	// 查找对应名称的映射
+	for _, mapping := range p.table {
+		if mapping.Name == name {
+			mapping.PublicPort = port
+			mapping.TargetAddr = add
+			mapping.RateLimit = limit
+			return
+		}
+	}
+}
+
 // Close 关闭连接
 func (p *Pool) Close(name string) error {
 	p.mutex.Lock()

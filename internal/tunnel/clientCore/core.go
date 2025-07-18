@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/xtaci/smux"
 	"io"
 	"log"
 	"net"
@@ -13,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/xtaci/smux"
 )
 
 // Start 启动

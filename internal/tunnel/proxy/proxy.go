@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"strings"
+
+	"golang.org/x/time/rate"
 )
 
 // StartPublicListener 持续监听公网端口流量，建立 stream 连接
@@ -31,6 +33,10 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 	defer func() {
 		mapping.Status = "inactive"
 	}()
+
+	// 初始化限流器，每秒 rateLimit 字节
+	rateLimit := int(mapping.RateLimit)
+	limiter := rate.NewLimiter(rate.Limit(rateLimit), rateLimit) // 每秒允许 rateLimit 字节
 
 	go func() {
 		// 监听端口关闭
@@ -96,12 +102,65 @@ func StartPublicListener(ctx context.Context, mapping *pool.Mapping) {
 		}
 
 		fmt.Printf("建立转发: 端口 %s <=> 客户端本地 %s\n", pubPort, target)
-		go proxy(publicConn, stream, nil)
-		go proxy(stream, publicConn, mapping)
+		// nolint:contextcheck
+		go rateLimitedProxy(mapping.Ctx, publicConn, stream, limiter, nil)
+		// nolint:contextcheck
+		go rateLimitedProxy(mapping.Ctx, stream, publicConn, limiter, mapping)
+	}
+}
+
+// rateLimitedProxy 使用 rate.Limiter 限制速率的代理
+func rateLimitedProxy(ctx context.Context, dst, src net.Conn, limiter *rate.Limiter, mapping *pool.Mapping) {
+	defer func(dst net.Conn) {
+		_ = dst.Close()
+	}(dst)
+	defer func(src net.Conn) {
+		_ = src.Close()
+	}(src)
+
+	buf := make([]byte, 1024*512) // 缓存大小，512kb
+
+	for {
+		// 检查上下文是否已取消,如果未取消
+		select {
+		case <-ctx.Done():
+			return
+		case <-global.Ctx.Done():
+			return
+		default:
+		}
+		n, err := src.Read(buf)
+		if err != nil {
+			if err != io.EOF {
+				global.ErrorLog.Println("数据读取失败:", err)
+			}
+			break
+		}
+
+		// 等待令牌（控制速率）
+		err = limiter.WaitN(ctx, n) // 等待令牌，限制每次读取的字节数
+		if err != nil {
+			global.ErrorLog.Println("限流失败:", err)
+			break
+		}
+
+		// 向目标写入数据
+		_, err = dst.Write(buf[:n])
+		if err != nil {
+			global.ErrorLog.Println("数据写入失败:", err)
+			break
+		}
+
+		// 更新流量统计
+		if mapping != nil {
+			mapping.Traffic += int64(n)
+			global.InfoLog.Printf("流量转发: %d 字节", n)
+		}
 	}
 }
 
 // proxy 数据转发
+// nolint:unused
 func proxy(dst, src net.Conn, mapping *pool.Mapping) {
 	defer func(dst net.Conn) {
 		_ = dst.Close()
@@ -118,5 +177,6 @@ func proxy(dst, src net.Conn, mapping *pool.Mapping) {
 	// 正常流量转发
 	byteCount, _ := io.Copy(dst, src)
 	mapping.Traffic += byteCount
+	global.Config.TotalTraffic += byteCount
 	global.InfoLog.Printf("流量转发: %d 字节", byteCount)
 }
