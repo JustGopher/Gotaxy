@@ -368,7 +368,7 @@ func AddMapping(args []string) {
 		TargetAddr: args[2],
 		Enable:     false,
 		Traffic:    0,
-		RateLimit:  2048,
+		RateLimit:  1024*1024*2,
 	})
 	if err != nil {
 		global.ErrorLog.Printf("addMapping() 插入映射数据失败: %v", err)
@@ -453,9 +453,8 @@ func UpdMapping(args []string) {
 		fmt.Println("更新映射数据失败:", err)
 		return
 	}
-
-	global.ConnPool.UpdateRateLimit(args[0], int64(retaLimit))
 	global.ConnPool.Update(args[0], args[1], args[2], int64(retaLimit))
+
 }
 
 // Heart 心跳
