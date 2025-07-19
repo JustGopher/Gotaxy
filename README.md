@@ -21,6 +21,23 @@
 go run cmd/server/server.go
 ```
 
+##### 下载证书
+
+- 在 http://localhost:9001 下载证书
+- 或在命令行中:
+```bash
+gen-ca
+gen-certs
+```
+
+##### 启动服务端
+
+- 在网页端按下"启动服务"的按钮
+- 或在命令行中执行:
+```bash
+start
+```
+
 #### 客户端连接
 
 ```bash
