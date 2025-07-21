@@ -98,7 +98,6 @@ func (s *Shell) Run() {
 			}
 			continue
 		case line == "help":
-			s.usage(rl.Stderr())
 			s.printHelpDoc()
 			continue
 		case line == "exit":
@@ -136,156 +135,71 @@ func (s *Shell) buildCompleter() *readline.PrefixCompleter {
 // printHelpDoc 打印命令帮助文档
 // nolint:funlen
 func (s *Shell) printHelpDoc() {
-	type cmdHelp struct {
-		cmd         string
-		description string
-		usage       []string
-	}
+	helpDoc := `命令帮助文档:
+  gen-ca - 生成CA证书
+    格式: gen-ca [有效期(年)] [-overwrite]
+      有效期: 可选参数，指定CA证书的有效期，默认为10年
+      -overwrite: 可选参数，强制覆盖已存在的证书
+      示例: gen-ca 5 -overwrite  (生成有效期为5年的CA证书并覆盖已有证书)
 
-	helpDocs := []cmdHelp{
-		{
-			cmd:         "gen-ca",
-			description: "生成CA证书",
-			usage: []string{
-				"格式: gen-ca [有效期(年)] [-overwrite]",
-				"  有效期: 可选参数，指定CA证书的有效期，默认为10年",
-				"  -overwrite: 可选参数，强制覆盖已存在的证书",
-				"  示例: gen-ca 5 -overwrite  (生成有效期为5年的CA证书并覆盖已有证书)",
-			},
-		},
-		{
-			cmd:         "gen-certs",
-			description: "生成服务端和客户端证书",
-			usage: []string{
-				"格式: gen-certs [有效期(日)]",
-				"  有效期: 可选参数，指定证书的有效期(天)，默认为10天",
-				"  示例: gen-certs 30  (生成有效期为30天的证书)",
-			},
-		},
-		{
-			cmd:         "start",
-			description: "启动内网穿透服务器",
-			usage: []string{
-				"功能: 启动服务器，会检查证书是否存在",
-			},
-		},
-		{
-			cmd:         "stop",
-			description: "停止内网穿透服务器",
-			usage: []string{
-				"功能: 停止运行中的服务器",
-			},
-		},
-		{
-			cmd:         "show-config",
-			description: "显示服务端配置",
-			usage: []string{
-				"功能: 显示当前服务器IP、监听端口和邮箱配置",
-			},
-		},
-		{
-			cmd:         "show-mapping",
-			description: "显示所有端口映射",
-			usage: []string{
-				"功能: 显示所有配置的端口映射及其状态",
-			},
-		},
-		{
-			cmd:         "set-ip",
-			description: "设置服务端IP地址",
-			usage: []string{
-				"格式: set-ip <ip>",
-				"  功能: 设置服务端IP地址",
-				"  示例: set-ip 192.168.1.100",
-			},
-		},
-		{
-			cmd:         "set-port",
-			description: "设置服务端监听端口",
-			usage: []string{
-				"格式: set-port <port>",
-				"  功能: 设置服务端监听端口，范围为1-65535",
-				"  示例: set-port 9000",
-			},
-		},
-		{
-			cmd:         "set-email",
-			description: "设置服务端邮箱",
-			usage: []string{
-				"格式: set-email <email>",
-				"  功能: 设置服务端邮箱地址，用于接收通知",
-				"  示例: set-email admin@example.com",
-			},
-		},
-		{
-			cmd:         "add-mapping",
-			description: "添加端口映射",
-			usage: []string{
-				"格式: add-mapping <名称> <公网端口> <目标地址>",
-				"  功能: 添加一个新的端口映射配置",
-				"  示例: add-mapping web 8080 127.0.0.1:3000",
-			},
-		},
-		{
-			cmd:         "del-mapping",
-			description: "删除端口映射",
-			usage: []string{
-				"格式: del-mapping <名称>",
-				"  功能: 删除指定名称的端口映射",
-				"  示例: del-mapping web",
-			},
-		},
-		{
-			cmd:         "upd-mapping",
-			description: "更新端口映射",
-			usage: []string{
-				"格式: upd-mapping <名称> <公网端口> <目标地址> <状态>",
-				"  功能: 更新指定名称的端口映射配置",
-				"  示例: upd-mapping web 8080 127.0.0.1:3000 open",
-			},
-		},
-		{
-			cmd:         "mode",
-			description: "切换编辑模式",
-			usage: []string{
-				"格式: mode [vi|emacs]",
-				"  功能: 设置命令行编辑模式",
-				"  示例: mode vi  (切换到vi模式)",
-			},
-		},
-		{
-			cmd:         "help",
-			description: "显示此帮助信息",
-			usage:       []string{},
-		},
-		{
-			cmd:         "exit",
-			description: "退出程序",
-			usage: []string{
-				"功能: 停止服务并退出命令行界面",
-			},
-		},
-	}
+  gen-certs - 生成服务端和客户端证书
+    格式: gen-certs [有效期(日)]
+      有效期: 可选参数，指定证书的有效期(天)，默认为10天
+      示例: gen-certs 30  (生成有效期为30天的证书)
 
-	fmt.Println("\n命令帮助文档:")
-	for _, doc := range helpDocs {
-		fmt.Printf("  %s - %s\n", doc.cmd, doc.description)
-		for _, line := range doc.usage {
-			fmt.Printf("    %s\n", line)
-		}
-		fmt.Println()
-	}
-}
+  start - 启动内网穿透服务器
+    功能: 启动服务器，会检查证书是否存在
 
-func (s *Shell) usage(w io.Writer) {
-	_, err := io.WriteString(w, "commands:\n")
-	if err != nil {
-		return
-	}
-	_, err = io.WriteString(w, s.buildCompleter().Tree("    "))
-	if err != nil {
-		return
-	}
+  stop - 停止内网穿透服务器
+    功能: 停止运行中的服务器
+
+  show-config - 显示服务端配置
+    功能: 显示当前服务器IP、监听端口和邮箱配置
+
+  show-mapping - 显示所有端口映射
+    功能: 显示所有配置的端口映射及其状态
+
+  set-ip - 设置服务端IP地址
+    格式: set-ip <ip>
+    功能: 设置服务端IP地址
+    示例: set-ip 192.168.1.100
+
+  set-port - 设置服务端监听端口
+    格式: set-port <port>
+    功能: 设置服务端监听端口，范围为1-65535
+    示例: set-port 9000
+
+  set-email - 设置服务端邮箱
+    格式: set-email <email>
+    功能: 设置服务端邮箱地址，用于接收通知
+    示例: set-email admin@example.com
+
+  add-mapping - 添加端口映射
+    格式: add-mapping <名称> <公网端口> <目标地址>
+    功能: 添加一个新的端口映射配置
+    示例: add-mapping web 8080 127.0.0.1:3000
+
+  del-mapping - 删除端口映射
+    格式: del-mapping <名称>
+    功能: 删除指定名称的端口映射
+    示例: del-mapping web
+
+  upd-mapping - 更新端口映射
+    格式: upd-mapping <名称> <公网端口> <目标地址> <状态>
+    功能: 更新指定名称的端口映射配置
+    示例: upd-mapping web 8080 127.0.0.1:3000 open
+
+  mode - 切换编辑模式
+    格式: mode [vi|emacs]
+    功能: 设置命令行编辑模式
+    示例: mode vi  (切换到vi模式)
+
+  help - 显示此帮助信息
+
+  exit - 退出程序
+    功能: 停止服务并退出命令行界面`
+
+	fmt.Println(helpDoc)
 }
 
 func filterInput(r rune) (rune, bool) {
