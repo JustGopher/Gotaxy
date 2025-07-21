@@ -5,12 +5,13 @@
 🚀 Gotaxy 是一款基于 Go 语言开发的轻量级内网穿透工具，帮助开发者将内网服务安全、便捷地暴露到公网。
 
 
-#### _"Go beyond NAT, with style."_
+**_"Go beyond NAT, with style."_**
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/JustGopher/Gotaxy)](https://github.com/JustGopher/Gotaxy/graphs/contributors)
 [![Stars](https://img.shields.io/github/stars/JustGopher/Gotaxy?style=social)](https://github.com/JustGopher/Gotaxy/stargazers)
+
 
 ### 核心技术
 - **语言**: Go 1.24+
@@ -21,83 +22,57 @@
 
 ---
 
-#  🚀 快速开始
+##  🚀 快速开始
 
-## 运行项目
+### 获取程序
 
-### 拷贝代码：
+在 Release 中下载最新的版本，提供可执行程序、压缩包、源码，支持AMD64下的Linux和Windows环境运行
 
-#### 服务端启动
+### 服务端启动
 
 ```bash
-go run cmd/server/server.go
+./gotaxy-server # 执行程序，若为windows，程序名为 gotaxy-server.exe，下方客户端同理
+# 如果为通过源码运行:
+# go run cmd/server/server.go
 ```
 
-##### 下载证书
+##### 生成证书
 
-CA 根证书在 Gotaxy 中的作用类似于 “身份证颁发机构”：它通过颁发和签名证书，确保内网穿透过程中 “通信双方身份可信” 且 “数据传输加密”，是保障工具安全使用的核心机制。
-
+Gotaxy通过原生库实现自签名 CA 证书：它通过颁发和签名证书，确保内网穿透过程中 “通信双方身份可信” 且 “数据传输加密”，是保障工具安全使用的核心机制。
 
 服务端和客户端证书二者配合 CA 根证书，共同构建了 Gotaxy 从 “身份验证” 到 “数据加密” 的完整安全链路，确保内网穿透过程既安全又可靠。
-- 在命令行中:
+
+服务端通过交互命令生成证书:
 ```bash
-# 生成 CA 根证书
-gen-ca [year]
-# 服务端和客户端证书
-gen-certs [day]
+gen-ca    [year]  # 生成 CA 根证书
+gen-certs [day]   # 服务端和客户端证书
 Options:
-  -year int
+  year int
         证书有效期，单位为年 (default 10)
-  -day int
+  day int
         证书有效期，单位为天 (default 365)
 ```
 
-- 在命令行中：
+设置服务端IP、监听端口，以及需要穿透的内网服务的地址
 ```bash
-# 启动服务端
-start
+set--ip <ip>
+set--port <port>
+add-mapping <name> <public_port> <target_addr> # 添加映射端口
+open-mapping <name> # 新增的映射默认关闭，需手动打开
 ```
 
-#### 客户端连接
-
+启动服务：
 ```bash
-go run cmd/client/client.go -h [host] -p <port> [-ca <ca-cert-path>] [-crt <client-cert-path>] [-key <private-key-path>]
-Options:
-  -h [host]     
-        The hostname or IP address of the server (default "127.0.0.1")
-  -p <port>
-        The port number to connect to (default 9000)
-  -ca <ca-cert-path>
-        Path to the CA certificate file (default "certs/ca.crt")
-  -crt <client-cert-path>
-        Path to the client certificate file (default "certs/client.crt")
-  -key <private-key-path>
-        Path to the client private key file (default "certs/client.key")`)
+start # 启动服务端核心服务，开始监听客户端
 ```
 
-### 下载打包文件：
+### 客户端连接
 
-- 点击项目页面的 "Actions" 选项卡
-- 找到并下载最新的 "Release" 版本
-
-#### 服务端启动：
-
+启动客户端并建立端口转发隧道，客户端启动需要服务端主机IP和监听端口，同时需要携带服务端生成的TLS证书
 ```bash
-# 生成 CA 根证书
-./gotaxy-server gen-ca
-
-# 使用 CA 签发服务端证书
-./gotaxy-server gen-certs
-
-# 启动服务端
-./gotaxy-server start
-```
-
-#### 客户端连接：
-
-```bash
-# 启动客户端并建立端口转发隧道
 ./gotaxy-client start  -h [host] -p <port> [-ca <ca-cert-path>] [-crt <client-cert-path>] [-key <private-key-path>]
+# 如果通过源码运行:
+# go run cmd/client/client.go -h [host] -p <port> [-ca <ca-cert-path>] [-crt <client-cert-path>] [-key <private-key-path>]
 Options:
   -h [host]     
         The hostname or IP address of the server (default "127.0.0.1")
@@ -111,11 +86,12 @@ Options:
         Path to the client private key file (default "certs/client.key")`)
 ```
 
-## ⚙️ 命令使用说明
+
+## ⚙️ 服务端交互命令使用说明
 
 以下列出了服务端的所有可用命令及其效果：
 
-### 服务端命令（运行项目之后）
+
 
 - gen-ca - 生成CA证书
 
@@ -186,7 +162,7 @@ Options:
 
 - add-mapping - 添加端口映射
 
-  格式: add-mapping <名称> <公网端口> <目标地址> <状态>
+  格式: add-mapping <名称> <公网端口> <目标地址>
 
   功能: 添加一个新的端口映射配置
 
@@ -226,6 +202,8 @@ Options:
 - exit - 退出程序
 
   功能: 停止服务并退出命令行界面`
+
+---
 
 ### 需求文档
 
