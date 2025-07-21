@@ -205,7 +205,7 @@ func generateCA(args []string) {
 // 格式：gen-certs [有效期(日)]
 func generateCerts(args []string) {
 	// 默认天数
-	day := 10
+	day := 365
 
 	// 校验数量
 	length := len(args)
