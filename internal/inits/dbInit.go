@@ -2,6 +2,7 @@ package inits
 
 import (
 	"database/sql"
+	"os"
 
 	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/internal/storage/models"
@@ -12,6 +13,16 @@ import (
 // DBInit 数据库初始化
 func DBInit() *sql.DB {
 	var err error
+	// 检查并创建 data 文件夹
+	dataDir := "data"
+	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
+		err := os.MkdirAll(dataDir, os.ModePerm)
+		if err != nil {
+			global.ErrorLog.Printf("DBInit() 创建 data 文件夹失败 -> %v", err)
+			panic(err)
+		}
+	}
+
 	db, err := sql.Open("sqlite", "data/data.db")
 	if err != nil {
 		global.ErrorLog.Printf("DBInit() 打开数据库失败 -> %v", err)
