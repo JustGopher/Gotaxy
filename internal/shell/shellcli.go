@@ -202,17 +202,6 @@ func (s *Shell) printHelpDoc() {
 	fmt.Println(helpDoc)
 }
 
-func (s *Shell) usage(w io.Writer) {
-	_, err := io.WriteString(w, "commands:\n")
-	if err != nil {
-		return
-	}
-	_, err = io.WriteString(w, s.buildCompleter().Tree("    "))
-	if err != nil {
-		return
-	}
-}
-
 func filterInput(r rune) (rune, bool) {
 	switch r {
 	case readline.CharCtrlZ:
