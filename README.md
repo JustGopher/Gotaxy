@@ -1,80 +1,84 @@
 # Gotaxy
 
-<img align="right" width="280px"  src="docs/images/logo2.png"  alt="logo"> 
+<img align="right" width="280px"  src="docs/images/logo2.png"  alt="logo">
 
-🚀 Gotaxy 是一款基于 Go 语言开发的轻量级内网穿透工具，帮助开发者将内网服务安全、便捷地暴露到公网。
+English | [简体中文](README_CN.md)
+
+✈️ Gotaxy is a lightweight internal network penetration tool developed based on the Go language, which helps developers safely and conveniently expose internal network services to the public network.
 
 
 **_"Go beyond NAT, with style."_**
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Contributors](https://img.shields.io/github/contributors/JustGopher/Gotaxy)](https://github.com/JustGopher/Gotaxy/graphs/contributors)
+[![License](https://img.shields.io/badge/License-Apache-blue.svg)](LICENSE)
+[![SQLite](https://img.shields.io/badge/SQLite-1.38-blue?logo=sqlite)](https://pkg.go.dev/modernc.org/sqlite#section-readme)
+[![smux](https://img.shields.io/badge/xtaci%2Fsmux-1.5.34-brightgreen)](https://github.com/xtaci/smux)
+[![readline](https://img.shields.io/badge/chzyer%2Freadline-1.5.1-orange)](https://github.com/chzyer/readline)
 [![Stars](https://img.shields.io/github/stars/JustGopher/Gotaxy?style=social)](https://github.com/JustGopher/Gotaxy/stargazers)
 
 
-### 核心技术
-- **语言**: Go 1.24+
-- **网络**: TCP/TLS 协议
-- **数据库**: SQLite (modernc.org/sqlite)
-- **多路复用**: xtaci/smux
-- **交互界面**: chzyer/readline
+### Core Technologies
+- **Language**: Go 1.24+
+- **Network**: TCP/TLS Protocol
+- **Database**: SQLite (modernc.org/sqlite)
+- **Multiplexing**: xtaci/smux
+- **Interactive Interface**: chzyer/readline
 
 ---
 
-##  🚀 快速开始
+## 🚀 Quick Start
 
-### 获取程序
+### Get the Program
 
-在 Release 中下载最新的版本，提供可执行程序、压缩包、源码，支持AMD64下的Linux和Windows环境运行
+Download the latest version in Release, which provides executable programs, compressed packages, and source codes. It supports running on Linux and Windows environments under AMD64.
 
-### 服务端启动
+### Server Startup
 
 ```bash
-./gotaxy-server # 执行程序，若为windows，程序名为 gotaxy-server.exe，下方客户端同理
-# 如果为通过源码运行:
+./gotaxy-server  # Run the program. If it's Windows, the program name is gotaxy-server.exe. The same applies to the client below.
+# If running from source code: 
 # go run cmd/server/server.go
 ```
 
-##### 生成证书
+##### Generate Certificate
 
-Gotaxy通过原生库实现自签名 CA 证书：它通过颁发和签名证书，确保内网穿透过程中 “通信双方身份可信” 且 “数据传输加密”，是保障工具安全使用的核心机制。
+Gotaxy implements a self-signed CA certificate through a native library: by issuing and signing certificates, it ensures that the identities of both communication parties are trustworthy and that data transmission is encrypted during the internal network penetration process, which is the core mechanism for ensuring the safe use of the tool.
 
-服务端和客户端证书二者配合 CA 根证书，共同构建了 Gotaxy 从 “身份验证” 到 “数据加密” 的完整安全链路，确保内网穿透过程既安全又可靠。
+The server and client certificates, in conjunction with the CA root certificate, jointly form a complete secure chain for Gotaxy from "authentication" to "data encryption", ensuring that the internal network penetration process is both secure and reliable.
 
-服务端通过交互命令生成证书:
+The server generates the certificate through interactive commands:
 ```bash
-gen-ca    [year]  # 生成 CA 根证书
-gen-certs [day]   # 服务端和客户端证书
-Options:
+gen-ca    [year]  # Generate root CA certificate
+gen-certs [day]   # Server and client certificates
+# Options:
   year int
-        证书有效期，单位为年 (default 10)
+        Certificate validity period, in years (default 10)
   day int
-        证书有效期，单位为天 (default 365)
+        Certificate validity period, in days (default 365)    
 ```
 
-设置服务端IP、监听端口，以及需要穿透的内网服务的地址
+Set the server IP, listening port, and the address of the internal network service that needs to be penetrated.
 ```bash
 set--ip <ip>
 set--port <port>
-add-mapping <name> <public_port> <target_addr> # 添加映射端口
-open-mapping <name> # 新增的映射默认关闭，需手动打开
+add-mapping <name> <public_port> <target_addr> # Add a port mapping
+open-mapping <name> # Newly added mappings are closed by default and need to be manually opened 
 ```
 
-启动服务：
+Start the service:
 ```bash
-start # 启动服务端核心服务，开始监听客户端
+Start # Start the core service of the server and begin to listen for clients. 
 ```
 
-### 客户端连接
+### Client Connection
 
-启动客户端并建立端口转发隧道，客户端启动需要服务端主机IP和监听端口，同时需要携带服务端生成的TLS证书
+Start the client and establish a port forwarding tunnel. The client startup requires the IP address and listening port of the server host, and also needs to carry the TLS certificate generated by the server.
 ```bash
 ./gotaxy-client start  -h [host] -p <port> [-ca <ca-cert-path>] [-crt <client-cert-path>] [-key <private-key-path>]
-# 如果通过源码运行:
+# If running through source code: 
 # go run cmd/client/client.go -h [host] -p <port> [-ca <ca-cert-path>] [-crt <client-cert-path>] [-key <private-key-path>]
 Options:
-  -h [host]     
+  -h [host]
         The hostname or IP address of the server (default "127.0.0.1")
   -p <port>
         The port number to connect to (default 9000)
@@ -87,146 +91,149 @@ Options:
 ```
 
 
-## ⚙️ 服务端交互命令使用说明
+### ⚙️ Instructions for Using Server Interaction Commands
 
-以下列出了服务端的所有可用命令及其效果：
-
-
-
-- gen-ca - 生成CA证书
-
-  格式: gen-ca [有效期(年)] [-overwrite]
-
-  有效期: 可选参数，指定CA证书的有效期，默认为10年
-  
-  -overwrite: 可选参数，强制覆盖已存在的CA证书
-
-  示例: gen-ca 5 -overwrite  (生成有效期为5年的CA证书并覆盖已有证书)
+The following lists all available commands on the server and their effects:
 
 
-- gen-certs - 生成服务端和客户端证书
 
-  格式: gen-certs [有效期(日)]
-  
-  有效期: 可选参数，指定证书的有效期(天)，默认为10天
-  
-  示例: gen-certs 30  (生成有效期为30天的证书)
-  
+- `gen-ca [time(year)] [-overwrite]`
 
-- start - 启动内网穿透服务器
+  Validity period: Optional parameter, specifies the validity period of the CA certificate. The default is 10 years.
 
-  功能: 启动服务器，会检查证书是否存在
+  -overwrite: Optional parameter, forces overwrite of an existing CA certificate.
+
+  gen-ca 5 -overwrite  (Generate a CA certificate valid for 5 years and overwrite the existing one)
 
 
-- stop - 停止内网穿透服务器
+- `gen-certs [time(day)]`
 
-  功能: 停止运行中的服务器
+  Validity period: Optional parameter, specifies the validity period of the certificate (in days), default is 365 days.
 
-
-- show-config - 显示服务端配置
-
-  功能: 显示当前服务器IP、监听端口和邮箱配置
+  Generate certificates with a validity of 30 days: gen-certs 30
 
 
-- show-mapping - 显示所有端口映射
+- `start`
 
-  功能: 显示所有配置的端口映射及其状态
-
-
-- set-ip - 设置服务端IP地址
-
-  格式: set-ip <ip>
-
-  功能: 设置服务端IP地址
-
-  示例: set-ip 192.168.1.100
+  Function: Start the server and check if the certificate exists.
 
 
-- set-port - 设置服务端监听端口
+- `stop`
 
-  格式: set-port <port>
-
-  功能: 设置服务端监听端口，范围为1-65535
-
-  示例: set-port 9000
+  Function: Stop the running server
 
 
-- set-email - 设置服务端邮箱
+- `show-config`
 
-  格式: set-email <email>
-
-  功能: 设置服务端邮箱地址，用于接收通知
-
-  示例: set-email admin@example.com
+  Function: Display the current server IP, listening port, and email configuration.
 
 
-- add-mapping - 添加端口映射
+- `show-mapping`
 
-  格式: add-mapping <名称> <公网端口> <目标地址>
-
-  功能: 添加一个新的端口映射配置
-
-  示例: add-mapping web 8080 127.0.0.1:3000
+  Function: Display all configured port mappings and their statuses.
 
 
-- del-mapping - 删除端口映射
+- `set-ip <ip>`
 
-  格式: del-mapping <名称>
+  Function: Set the server IP address
 
-  功能: 删除指定名称的端口映射
-
-  示例: del-mapping web
+  Set IP to 192.168.1.100
 
 
-- upd-mapping - 更新端口映射
+- `set-port <port>`
 
-  格式: upd-mapping <名称> <公网端口> <目标地址> <状态>
+  Function: Set the listening port of the server, with a range of 1 to 65535.
 
-  功能: 更新指定名称的端口映射配置
-
-  示例: upd-mapping web 8080 127.0.0.1:3000 open
+  set-port 9000
 
 
-- mode - 切换编辑模式
+- `set-email <email>`
 
-  格式: mode [vi|emacs]
+  Function: Set the server email address for receiving notifications.
 
-  功能: 设置命令行编辑模式
-
-  示例: mode vi  (切换到vi模式)
+  set-email admin@example.com
 
 
-- help - 显示此帮助信息
+- `add-mapping <name> <public_port> <target_addr>`
+
+  Function: Add a new port mapping configuration
+
+  add-mapping web 8080 127.0.0.1:3000
 
 
-- exit - 退出程序
+- `del-mapping <name>`
 
-  功能: 停止服务并退出命令行界面`
+  Function: Delete the port mapping with the specified name.
+
+  delete mapping web
+
+
+- `upd-mapping <name> <public_port> <target_addr> <rate>`
+
+  Function: Update the port mapping configuration of the specified name.
+
+  upd-mapping web 8080 127.0.0.1:3000 2,097,152 (2MB)
+
+
+- `open-mapping <name>`
+
+  Function: Open the port mapping with the specified name.
+
+  Example: open-mapping web
+
+
+- `close-mapping <name>`
+
+  Function: Disable the port mapping with the specified name.
+
+  Example: close-mapping web
+
+
+- `heart`
+
+  Function: Check the current link status
+
+
+- `mode [vi|emacs]`
+
+  Function: Set command-line editing mode
+
+  Switch to vi mode: mode vi
+
+
+- `help`
+
+  Function: Display this help information
+
+
+- `exit`
+
+  Function: Stop the service and exit the command line interface.
 
 ---
 
-### 需求文档
+### Requirements Document
 
-详细需求分析请参阅 [REQUIREMENTS.md](docs/REQUIREMENTS.md) 文件。
-
----
-
-### 提交贡献 
-
-欢迎提交 Issue 和 Pull Request。
-
-如果要贡献代码，请查阅 [CONTRIBUTING.md.md](docs/CONTRIBUTING.md) 文件
-
-提交代码请阅读 [COMMIT_CONVENTION.md](docs/COMMIT_CONVENTION.md)，我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范
+For detailed requirements analysis, please refer to the [REQUIREMENTS.md](docs/REQUIREMENTS.md) file.
 
 ---
 
-<h3 align="left">贡献墙</h3>
+### Submit Contributions
+
+Welcome to submit Issues and Pull Requests.
+
+If you want to contribute code, please refer to the [CONTRIBUTING.md.md](docs/CONTRIBUTING.md) file.
+
+Please read [COMMIT_CONVENTION.md](docs/COMMIT_CONVENTION.md) before submitting code. We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+
+---
+
+<h3 align="left">Contribution Wall</h3>
 
 
 <a href="https://github.com/JustGopher/Gotaxy/graphs/contributors">
 
-<img src="https://contri.buzz/api/wall?repo=JustGopher/Gotaxy&onlyAvatars=true" alt="Contributors' Wall for JustGopher/Gotaxy" />
+<img src="https://contri.buzz/api/wall? repo=JustGopher/Gotaxy&onlyAvatars=true" alt="Contributors' Wall for JustGopher/Gotaxy" />
 
 </a>
 
