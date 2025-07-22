@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"github/JustGopher/Gotaxy/internal/web"
-
 	"github/JustGopher/Gotaxy/internal/global"
 	"github/JustGopher/Gotaxy/internal/inits"
 	"github/JustGopher/Gotaxy/internal/pool"
@@ -22,7 +20,8 @@ func main() {
 
 	global.InfoLog.Println("Gotaxy 启动成功")
 
-	go web.Start()
+	// web 面板未开发完成
+	//go web.Start()
 
 	sh := shell.New()
 	shell.RegisterCMD(sh)

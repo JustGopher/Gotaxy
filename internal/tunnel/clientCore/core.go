@@ -18,7 +18,8 @@ import (
 
 // Start 启动
 func Start(serverAddr, certFile, keyFile, caFile string) {
-	go HelloServe()
+	// HelloServe 为测试服务，位于最下方HelloServe()函数
+	// go HelloServe()
 
 	fmt.Println(serverAddr, certFile, keyFile, caFile)
 	tlsCfg, err := LoadClientTLSConfig(certFile, keyFile, caFile)

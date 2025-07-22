@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # 任何以 v 开头的标签都会触发
+
+permissions:
+  contents: write   # 需要写权限才能上传 Release 资产
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          # ===== Linux AMD64 =====
+          - goos: linux
+            goarch: amd64
+            bin_suffix: ""          # Linux 可执行文件无扩展名
+            archive_ext: tar.gz
+
+          # ===== Windows AMD64 =====
+          - goos: windows
+            goarch: amd64
+            bin_suffix: ".exe"      # Windows 可执行文件扩展名
+            archive_ext: zip
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod   # 根据 go.mod 自动选择 1.24 等
+
+      - name: Build server & client
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0            # 纯静态编译，避免 libc 依赖
+        run: |
+          mkdir -p dist
+
+          # 服务端
+          go build \
+            -ldflags="-s -w" \
+            -o dist/server-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.bin_suffix }} \
+            ./cmd/server
+
+          # 客户端
+          go build \
+            -ldflags="-s -w" \
+            -o dist/client-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.bin_suffix }} \
+            ./cmd/client
+
+      - name: Create archive
+        run: |
+          cd dist
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip ../gotaxy-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip \
+                server-${{ matrix.goos }}-${{ matrix.goarch }}.exe \
+                client-${{ matrix.goos }}-${{ matrix.goarch }}.exe
+          else
+            tar -czf ../gotaxy-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz \
+                server-${{ matrix.goos }}-${{ matrix.goarch }} \
+                client-${{ matrix.goos }}-${{ matrix.goarch }}
+          fi
+          cd ..
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/server-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.bin_suffix }}
+            dist/client-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.bin_suffix }}
+            gotaxy-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.${{ matrix.archive_ext }}
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
